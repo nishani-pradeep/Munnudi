@@ -15,15 +15,15 @@ records, reconciles with the reports, and can never be silently rewritten by a l
 
 ### Decisions taken from you
 
-| Question | Answer | Consequence |
-| --- | --- | --- |
-| Which categories are "Maintenance"? | **All six** | `Operating Profit = Rent − all expenses`. Flag stays editable. |
-| Historical backfill? | **~2 prior months** | Month selector reaches any past month; no importer needed. |
-| Seed data? | **Realistic demo** | 12 months of plausible history + reset script. |
-| Hosting? | **Local now, deploy later** | Plain Postgres in Docker. Vendor-neutral. |
-| Data safety? | **Full kit** | Backup/restore scripts, CSV export, soft deletes, audit log. |
-| Vacant units in target? | **Yes + Vacancy Loss KPI** | Collection Rate is economically honest; causes separable. |
-| Authorization? | **"Don't worry too much — self use"** | No Supabase Auth/RLS. See [decision 8](#8-authorization-honestly). |
+| Question                            | Answer                                | Consequence                                                        |
+| ----------------------------------- | ------------------------------------- | ------------------------------------------------------------------ |
+| Which categories are "Maintenance"? | **All six**                           | `Operating Profit = Rent − all expenses`. Flag stays editable.     |
+| Historical backfill?                | **~2 prior months**                   | Month selector reaches any past month; no importer needed.         |
+| Seed data?                          | **Realistic demo**                    | 12 months of plausible history + reset script.                     |
+| Hosting?                            | **Local now, deploy later**           | Plain Postgres in Docker. Vendor-neutral.                          |
+| Data safety?                        | **Full kit**                          | Backup/restore scripts, CSV export, soft deletes, audit log.       |
+| Vacant units in target?             | **Yes + Vacancy Loss KPI**            | Collection Rate is economically honest; causes separable.          |
+| Authorization?                      | **"Don't worry too much — self use"** | No Supabase Auth/RLS. See [decision 8](#8-authorization-honestly). |
 
 ---
 
@@ -34,23 +34,23 @@ records, reconciles with the reports, and can never be silently rewritten by a l
 
 Everything below was verified live against the **npm registry** via `npm view`, which does work.
 
-| Package | Verified | Note |
-| --- | --- | --- |
-| `next` | **16.3.5** | `engines: node >=20.9.0` |
-| `react` / `react-dom` | **19.3.0** | |
-| `typescript` | **7.0.2** | native Go compiler; **fallback `^5.9`** if tooling lags |
-| `tailwindcss` | **4.3.3** | v4 CSS-first `@theme`; no `tailwind.config.ts` |
-| `shadcn` (CLI) | **4.21.0** | scaffolder only; see primitives note below |
-| `radix-ui` | **1.6.7** | **stable** |
-| `@base-ui-components/react` | **1.0.0-rc.0** | **release candidate** — shadcn's newer default foundation |
-| `drizzle-orm` / `drizzle-kit` | **0.45.2** / **0.31.10** | |
-| `recharts` | **3.10.1** | |
-| `zod` / `vitest` | **4.6.2** / **5.0.0** | |
-| `@tanstack/react-table` | **9.2.4** | |
-| `react-hook-form` / `@hookform/resolvers` | **7.88.0** / **5.9.1** | |
-| `lucide-react` / `date-fns` / `next-safe-action` | **1.45.0** / **4.4.0** / **8.7.3** | |
-| `next-auth` | `latest` = **4.24.15**, v5 = **5.0.0-beta.32** | v5 **never shipped stable** |
-| `prisma` | **8.0.0-rc.14** | **RC, not stable** |
+| Package                                          | Verified                                       | Note                                                      |
+| ------------------------------------------------ | ---------------------------------------------- | --------------------------------------------------------- |
+| `next`                                           | **16.3.5**                                     | `engines: node >=20.9.0`                                  |
+| `react` / `react-dom`                            | **19.3.0**                                     |                                                           |
+| `typescript`                                     | **7.0.2**                                      | native Go compiler; **fallback `^5.9`** if tooling lags   |
+| `tailwindcss`                                    | **4.3.3**                                      | v4 CSS-first `@theme`; no `tailwind.config.ts`            |
+| `shadcn` (CLI)                                   | **4.21.0**                                     | scaffolder only; see primitives note below                |
+| `radix-ui`                                       | **1.6.7**                                      | **stable**                                                |
+| `@base-ui-components/react`                      | **1.0.0-rc.0**                                 | **release candidate** — shadcn's newer default foundation |
+| `drizzle-orm` / `drizzle-kit`                    | **0.45.2** / **0.31.10**                       |                                                           |
+| `recharts`                                       | **3.10.1**                                     |                                                           |
+| `zod` / `vitest`                                 | **4.6.2** / **5.0.0**                          |                                                           |
+| `@tanstack/react-table`                          | **9.2.4**                                      |                                                           |
+| `react-hook-form` / `@hookform/resolvers`        | **7.88.0** / **5.9.1**                         |                                                           |
+| `lucide-react` / `date-fns` / `next-safe-action` | **1.45.0** / **4.4.0** / **8.7.3**             |                                                           |
+| `next-auth`                                      | `latest` = **4.24.15**, v5 = **5.0.0-beta.32** | v5 **never shipped stable**                               |
+| `prisma`                                         | **8.0.0-rc.14**                                | **RC, not stable**                                        |
 
 **Unverified — re-check at deploy:** Vercel Hobby terms, any cloud Postgres free tier.
 Deferred by design; Phase 8 chooses a host once these can be checked.
@@ -62,22 +62,22 @@ pnpm 10.33.2, Docker 29.7.2, gh 2.98.0. No Supabase CLI or `psql` needed under t
 
 ## Tech stack, and why
 
-| Layer | Choice | Rationale |
-| --- | --- | --- |
-| Runtime | **Node 24.18.0** (`.nvmrc`) | LTS; comfortably above Next 16's ≥20.9.0 |
-| Framework | Next.js 16.3.5 App Router, React 19.3 | PRD-specified; Server Actions keep data access server-side |
-| Language | TypeScript 7.0.2 | now `latest`; fallback pinned if any tool chokes |
-| Styling | Tailwind CSS 4.3.3 | CSS-first config |
-| Components | **shadcn/ui 4.21**, **Radix primitives** | Code lives in our repo — no black-box upgrades. Dense, classy financial-dashboard aesthetic; first-class Tailwind v4; built-in Recharts wrapper. **Primitives: Radix 1.6.7 (stable), not Base UI 1.0.0-rc.0** — see below. |
-| Charts | Recharts 3.10.1 | Covers all 8 PRD charts |
-| Database | **Plain PostgreSQL 17 in Docker** | Vendor-neutral. Deploying later is a connection-string change. |
-| ORM | **Drizzle 0.45.2** | Stable (**Prisma 8 is only RC**); SQL-first suits `numeric` money and generated columns |
-| Mutations | Server Actions + `next-safe-action` + Zod 4 | Typed, validated, server-only |
-| Tests | Vitest 5 | PRD §22's scenarios become pure unit tests |
+| Layer      | Choice                                      | Rationale                                                                                                                                                                                                                  |
+| ---------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime    | **Node 24.18.0** (`.nvmrc`)                 | LTS; comfortably above Next 16's ≥20.9.0                                                                                                                                                                                   |
+| Framework  | Next.js 16.3.5 App Router, React 19.3       | PRD-specified; Server Actions keep data access server-side                                                                                                                                                                 |
+| Language   | TypeScript 7.0.2                            | now `latest`; fallback pinned if any tool chokes                                                                                                                                                                           |
+| Styling    | Tailwind CSS 4.3.3                          | CSS-first config                                                                                                                                                                                                           |
+| Components | **shadcn/ui 4.21**, **Radix primitives**    | Code lives in our repo — no black-box upgrades. Dense, classy financial-dashboard aesthetic; first-class Tailwind v4; built-in Recharts wrapper. **Primitives: Radix 1.6.7 (stable), not Base UI 1.0.0-rc.0** — see below. |
+| Charts     | Recharts 3.10.1                             | Covers all 8 PRD charts                                                                                                                                                                                                    |
+| Database   | **Plain PostgreSQL 17 in Docker**           | Vendor-neutral. Deploying later is a connection-string change.                                                                                                                                                             |
+| ORM        | **Drizzle 0.45.2**                          | Stable (**Prisma 8 is only RC**); SQL-first suits `numeric` money and generated columns                                                                                                                                    |
+| Mutations  | Server Actions + `next-safe-action` + Zod 4 | Typed, validated, server-only                                                                                                                                                                                              |
+| Tests      | Vitest 5                                    | PRD §22's scenarios become pure unit tests                                                                                                                                                                                 |
 
-**Rejected:** *Supabase* — its main draw was bundled Auth+RLS, which self-use makes unnecessary,
-and its ~1-week idle pause is bad for a monthly-use app. *Auth.js* — v5 still beta.
-*Prisma* — RC. *A separate backend* — ruled out by PRD §16.1; write volume is trivial.
+**Rejected:** _Supabase_ — its main draw was bundled Auth+RLS, which self-use makes unnecessary,
+and its ~1-week idle pause is bad for a monthly-use app. _Auth.js_ — v5 still beta.
+_Prisma_ — RC. _A separate backend_ — ruled out by PRD §16.1; write volume is trivial.
 
 **On shadcn primitives.** shadcn has shifted its default unstyled foundation from Radix to
 **Base UI**, which is currently **`1.0.0-rc.0` — a release candidate**. Having rejected Prisma 8
@@ -96,7 +96,7 @@ All KPI math lives in `src/domain/` as **pure functions over plain arrays** — 
 framework imports. The entire lifetime dataset of this app is a few hundred KB (6 units × 12
 months × 10 years ≈ 720 census rows), so **everything is computed in memory. No aggregation SQL.**
 
-This is what makes PRD §22 "Dashboard and report totals match" true *by construction*: both
+This is what makes PRD §22 "Dashboard and report totals match" true _by construction_: both
 call the same function. The domain package must not import the schema, or the boundary is
 decorative.
 
@@ -127,7 +127,7 @@ All arithmetic is integer, so **addition and subtraction never round**.
 
 ### 3. Month = `varchar(7)` `'YYYY-MM'`, not `date`
 
-`pg-types` parses a `date` into a JS `Date` at *local* midnight. In IST, `2025-03-01` becomes
+`pg-types` parses a `date` into a JS `Date` at _local_ midnight. In IST, `2025-03-01` becomes
 `Mar 1 00:00 +05:30`, and `.toISOString().slice(0,7)` yields **`"2025-02"`** — March data files
 itself under February, at every JSON/CSV/chart boundary, for every user east of UTC.
 
@@ -147,7 +147,7 @@ and January's target silently drops it — rewriting a closed month.
 **Fix — a monthly unit census.** Rename `rent_records` → **`unit_month_records`** and generate a
 row for **every active unit every month**, including self-occupied ones, with occupancy and rent
 **snapshotted** at generation. PRD §6.2's Unit Collection Matrix already requires "Self Occupied"
-as a *cell state*, which only exists if the row exists.
+as a _cell state_, which only exists if the row exists.
 
 Historical target = `SUM(expected_rent_snapshot) WHERE is_billable` — derived purely from the
 census. **Rule: never filter a historical query by `units.active`.** For loans, use
@@ -159,7 +159,7 @@ store the same fact twice and recreate exactly the dual-source-of-truth bug call
 decision 5. Generation is `ON CONFLICT DO NOTHING`, so re-running never clobbers entered payments.
 
 **Facts get snapshotted; policies don't.** Occupancy is snapshotted. The self-occupied toggle,
-vacancy treatment, and `is_maintenance` are *policies* — evaluated at read time so flipping one
+vacancy treatment, and `is_maintenance` are _policies_ — evaluated at read time so flipping one
 reinterprets all history consistently.
 
 ### 5. PRD DEFECT — loan balance has two sources of truth ⚠️
@@ -170,15 +170,15 @@ names a column §17 never models.
 
 - Add **`principal_adjustment`** (signed) + **`adjustment_reason`**, making the identity exact:
   `outstanding_after = outstanding_before − principal_paid + principal_adjustment`.
-  Capitalized gold-loan interest, penalties and outside prepayments become *recorded events*
+  Capitalized gold-loan interest, penalties and outside prepayments become _recorded events_
   rather than a permanent warning banner that everyone learns to ignore.
 - Add **`opening_as_of_month`** — without it the recurrence has no anchor.
 - **Make `outstanding_after_payment` NULLABLE** (contra §10.1). Forcing it makes users invent a
   number that then becomes "authoritative". `effective = COALESCE(entered, derived)`; drift is
   only computed when the user actually entered a statement balance.
-- Drift is **per-row via `LAG`**, not a global total: *"Home Loan 2, March: expected ₹18,40,000,
-  recorded ₹18,52,340, unexplained +₹12,340"* — actionable. Exposed as view `v_loan_ledger`.
-- **No CHECK that the balance decreases** — §14 lists an increase as a *flag*, and gold loans
+- Drift is **per-row via `LAG`**, not a global total: _"Home Loan 2, March: expected ₹18,40,000,
+  recorded ₹18,52,340, unexplained +₹12,340"_ — actionable. Exposed as view `v_loan_ledger`.
+- **No CHECK that the balance decreases** — §14 lists an increase as a _flag_, and gold loans
   legitimately grow.
 - `scheduled_emi` nullable + **`expects_monthly_payment`**, so a bullet-repayment gold loan
   doesn't fire a false "repayment missing" flag every month.
@@ -214,9 +214,9 @@ coverage, via a three-state type:
 
 ```ts
 type Measure =
-  | { kind: 'value';   paise: Paise; basisMonths: number }
-  | { kind: 'partial'; paise: Paise; basisMonths: number; missing: MonthKey[] }
-  | { kind: 'unknown'; missing: MonthKey[] }
+  | { kind: "value"; paise: Paise; basisMonths: number }
+  | { kind: "partial"; paise: Paise; basisMonths: number; missing: MonthKey[] }
+  | { kind: "unknown"; missing: MonthKey[] };
 ```
 
 so a card can honestly read **"₹2,40,000 · 10 of 12 months"**.
@@ -239,7 +239,7 @@ An `OVERPAID` status makes genuine overpayment visible rather than silently abso
 
 ### 8. Authorization, honestly
 
-You said not to over-invest here, and that changes what's *correct* to build.
+You said not to over-invest here, and that changes what's _correct_ to build.
 
 A silent trap: with Drizzle connecting as a single pooled owner role, **RLS does nothing** —
 table owners bypass their own policies without `FORCE ROW LEVEL SECURITY`. Shipping policies
@@ -259,27 +259,27 @@ rather than quietly violated.
 Money `numeric(14,2)` · readings `numeric(14,3)` · months `varchar(7)` + regex CHECK · ids `uuid`.
 **[NEW]** / **[CHG]** mark deviations from PRD §17.
 
-| Table | Key fields |
-| --- | --- |
-| `properties` | `owner_id`, `name`, `currency` (frozen post-create), `timezone`, **`tracking_start_month`** [NEW — §11 requires it, §17 omits it], **`include_self_occupied_in_target`**, **`count_vacant_in_target` default true** [NEW] |
-| `units` | `unit_code`, `unit_type`, **`default_occupancy_status`** [CHG — seeds month 1 only], **`electricity_uom`/`water_uom`** [NEW], `active` · **unique (property, unit_code)** [NEW] |
-| `unit_rent_versions` | `unit_id`, `effective_month`, `expected_rent` · unique (unit, effective_month) |
+| Table                                                                    | Key fields                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `properties`                                                             | `owner_id`, `name`, `currency` (frozen post-create), `timezone`, **`tracking_start_month`** [NEW — §11 requires it, §17 omits it], **`include_self_occupied_in_target`**, **`count_vacant_in_target` default true** [NEW]                                                                                                                                                                                                          |
+| `units`                                                                  | `unit_code`, `unit_type`, **`default_occupancy_status`** [CHG — seeds month 1 only], **`electricity_uom`/`water_uom`** [NEW], `active` · **unique (property, unit_code)** [NEW]                                                                                                                                                                                                                                                    |
+| `unit_rent_versions`                                                     | `unit_id`, `effective_month`, `expected_rent` · unique (unit, effective_month)                                                                                                                                                                                                                                                                                                                                                     |
 | **`unit_month_records`** [CHG — renamed from `rent_records`; the census] | `property_id`, `unit_id`, `month`, **`occupancy_snapshot`** [NEW], `expected_rent_snapshot` (populated even when self-occupied, so future opportunity-cost views stay reconstructable), **`is_billable` GENERATED**, **`paid_amount` NULLABLE** (NULL = not entered — the single most important nullability in the schema), `payment_date`, **`status` GENERATED** (UNSET/UNPAID/PARTIAL/PAID/OVERPAID/NOT_BILLABLE), `deleted_at` |
-| `utility_records` | `property_id`, `unit_id`, `month`, `utility_type`, **`uom_snapshot`** [NEW], `previous_reading`, `current_reading`, **`usage_override`** [CHG — replaces ambiguous stored-and-derived `usage`], **`meter_event`** NONE/RESET/ROLLOVER/REPLACED [NEW — §8 requires it, §17 omits it], **`no_bill_this_month`** [NEW], `bill_amount`, `bill_paid` (tri-state), `deleted_at` · `CHECK (meter_event <> 'NONE' OR current >= previous)` |
-| `expense_categories` | `name`, `is_maintenance` (**all six seeded true**), `active` |
-| `expenses` | `property_id`, `unit_id` nullable, `month`, `expense_date`, `category_id`, `amount`, `comment`, `deleted_at` |
-| `loans` | `name`, `loan_type`, `lender`, `original_principal`, `opening_outstanding`, **`opening_as_of_month`** [NEW], `interest_rate`, `scheduled_emi` **nullable** [CHG], **`expects_monthly_payment`** [NEW], **`closed_month`** [NEW] |
-| `loan_repayments` | `loan_id`, `month`, `payment_date`, `total_payment`, `principal_paid` (0 for gold loan), `interest_paid`, `other_charges`, **`principal_adjustment`** signed + **`adjustment_reason`** [NEW], **`outstanding_after_payment` NULLABLE** [CHG], `deleted_at` |
-| `monthly_status` | `state` OPEN/CLOSED [CHG], **4 × `*_reviewed_at`** [NEW], `closed_at`, `closed_by`, **`reopened_at`** [NEW] |
-| `audit_log` | **`property_id`** [NEW — RLS/scoping can't follow a polymorphic ref without it], `user_id`, `entity_type`, `entity_id`, `action`, `before_json`, `after_json` · index `(property_id, entity_type, entity_id, created_at DESC)` · **append-only, written by a generic trigger** so no mutation path can forget |
-| **`v_loan_ledger`** [NEW] | view: `LAG`-based recurrence, `effective = COALESCE(entered, derived)`, per-row `drift` |
+| `utility_records`                                                        | `property_id`, `unit_id`, `month`, `utility_type`, **`uom_snapshot`** [NEW], `previous_reading`, `current_reading`, **`usage_override`** [CHG — replaces ambiguous stored-and-derived `usage`], **`meter_event`** NONE/RESET/ROLLOVER/REPLACED [NEW — §8 requires it, §17 omits it], **`no_bill_this_month`** [NEW], `bill_amount`, `bill_paid` (tri-state), `deleted_at` · `CHECK (meter_event <> 'NONE' OR current >= previous)` |
+| `expense_categories`                                                     | `name`, `is_maintenance` (**all six seeded true**), `active`                                                                                                                                                                                                                                                                                                                                                                       |
+| `expenses`                                                               | `property_id`, `unit_id` nullable, `month`, `expense_date`, `category_id`, `amount`, `comment`, `deleted_at`                                                                                                                                                                                                                                                                                                                       |
+| `loans`                                                                  | `name`, `loan_type`, `lender`, `original_principal`, `opening_outstanding`, **`opening_as_of_month`** [NEW], `interest_rate`, `scheduled_emi` **nullable** [CHG], **`expects_monthly_payment`** [NEW], **`closed_month`** [NEW]                                                                                                                                                                                                    |
+| `loan_repayments`                                                        | `loan_id`, `month`, `payment_date`, `total_payment`, `principal_paid` (0 for gold loan), `interest_paid`, `other_charges`, **`principal_adjustment`** signed + **`adjustment_reason`** [NEW], **`outstanding_after_payment` NULLABLE** [CHG], `deleted_at`                                                                                                                                                                         |
+| `monthly_status`                                                         | `state` OPEN/CLOSED [CHG], **4 × `*_reviewed_at`** [NEW], `closed_at`, `closed_by`, **`reopened_at`** [NEW]                                                                                                                                                                                                                                                                                                                        |
+| `audit_log`                                                              | **`property_id`** [NEW — RLS/scoping can't follow a polymorphic ref without it], `user_id`, `entity_type`, `entity_id`, `action`, `before_json`, `after_json` · index `(property_id, entity_type, entity_id, created_at DESC)` · **append-only, written by a generic trigger** so no mutation path can forget                                                                                                                      |
+| **`v_loan_ledger`** [NEW]                                                | view: `LAG`-based recurrence, `effective = COALESCE(entered, derived)`, per-row `drift`                                                                                                                                                                                                                                                                                                                                            |
 
 **All uniqueness must be partial** — `WHERE deleted_at IS NULL`. Otherwise soft-deleting a wrong
 repayment and entering the correction hits a unique violation on the very first correction.
-`deleted_at` goes on all four transactional tables (§3 asks to reverse *any* entry), with a
+`deleted_at` goes on all four transactional tables (§3 asks to reverse _any_ entry), with a
 `restore` operation — §22 requires records stay recoverable but §18 never defines one.
 
-**On `is_maintenance`:** it's a *policy*, so it stays editable and reinterprets history
+**On `is_maintenance`:** it's a _policy_, so it stays editable and reinterprets history
 consistently (same as the vacancy and self-occupied toggles). The UI will warn that changing it
 moves historical Operating Profit, and the change is audit-logged.
 
@@ -290,7 +290,7 @@ moves historical Operating Profit, and the change is audit-logged.
 Each phase ends in a working, committed, verifiable state.
 
 **Phase 0 — Plan into repo.** `git init`; copy this document to `docs/IMPLEMENTATION_PLAN.md`;
-`.nvmrc` = 24.18.0; `.gitignore`; first commit. *(Your explicit request.)*
+`.nvmrc` = 24.18.0; `.gitignore`; first commit. _(Your explicit request.)_
 
 **Phase 1 — Foundation.** Next 16 + TS + Tailwind 4 + shadcn; ESLint/Prettier; Vitest; Docker
 Compose Postgres 17; `.env.example`; app shell with nav + persistent month selector; INR
@@ -330,6 +330,7 @@ from `tracking_start_month`.
 ## Verification
 
 **Automated**
+
 - `pnpm test` — domain units, with **all 12 PRD §22 scenarios named explicitly**, plus the traps
   found in review: average Collection Rate = Σ/Σ (not mean of rates); Till-Now Pending vs summed
   monthly shortfall; missing month excluded from both numerator and denominator; `paid_amount`
@@ -339,6 +340,7 @@ from `tracking_start_month`.
 - `pnpm typecheck && pnpm lint && pnpm build`.
 
 **Manual**
+
 1. `pnpm db:reset && pnpm db:seed:demo` → 12 months of history.
 2. `pnpm dev` → dashboard populates across Current / Till Now / Average.
 3. **Reconciliation:** Dashboard totals == Reports totals for the same month and scope (§22, §25).
@@ -354,16 +356,16 @@ from `tracking_start_month`.
 
 ## Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| **Free-tier terms unverified** (no web access) | Deferred to Phase 8 by choosing local-first; nothing depends on a vendor until then |
-| TypeScript 7 tooling gaps | Fall back to `typescript@^5.9`; surfaces immediately in Phase 1 |
-| Drizzle 0.45 is pre-1.0 | Used for schema + typed queries only; generated columns, CHECKs and triggers are raw SQL |
-| shadcn's default primitive (Base UI) is an RC | Pin stable Radix 1.6.7 in Phase 1; components are copied into the repo, so switching later is contained |
-| Recharts 3 `defaultProps` behaviour under React 19 unconfirmed | Settled empirically in Phase 1 on the first chart — five-minute check, not a blocker |
-| Local-only Postgres = data lives on one Mac | Full backup kit in Phase 2, **before** real data is entered |
-| Scope: 8 phases is a large build | Every phase independently verifiable and committed; stop or re-prioritise at any boundary |
-| Deviations from PRD §16/§17/§19 | All marked **[NEW]/[CHG]** above with rationale; `docs/` will carry a PRD-deviations note so the PRD and code don't silently disagree |
+| Risk                                                           | Mitigation                                                                                                                            |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Free-tier terms unverified** (no web access)                 | Deferred to Phase 8 by choosing local-first; nothing depends on a vendor until then                                                   |
+| TypeScript 7 tooling gaps                                      | Fall back to `typescript@^5.9`; surfaces immediately in Phase 1                                                                       |
+| Drizzle 0.45 is pre-1.0                                        | Used for schema + typed queries only; generated columns, CHECKs and triggers are raw SQL                                              |
+| shadcn's default primitive (Base UI) is an RC                  | Pin stable Radix 1.6.7 in Phase 1; components are copied into the repo, so switching later is contained                               |
+| Recharts 3 `defaultProps` behaviour under React 19 unconfirmed | Settled empirically in Phase 1 on the first chart — five-minute check, not a blocker                                                  |
+| Local-only Postgres = data lives on one Mac                    | Full backup kit in Phase 2, **before** real data is entered                                                                           |
+| Scope: 8 phases is a large build                               | Every phase independently verifiable and committed; stop or re-prioritise at any boundary                                             |
+| Deviations from PRD §16/§17/§19                                | All marked **[NEW]/[CHG]** above with rationale; `docs/` will carry a PRD-deviations note so the PRD and code don't silently disagree |
 
 ---
 
@@ -375,3 +377,28 @@ from `tracking_start_month`.
    rather than silently absorbed.
 3. **Month locking (CLOSED) is optional** and defaults **off** — the section review checkmarks
    give you the checklist without friction. Say so if you'd rather have hard locking on.
+
+---
+
+## Build log — decisions settled empirically during implementation
+
+The plan above was written before any code existed. These are the points where
+reality differed from it, and what was done. Recorded so the reasoning is not lost.
+
+### Phase 1 (foundation) — complete
+
+| Planned                        | Actual                 | Evidence                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript **7.0.2**           | **5.9.3**              | `typescript-eslint@8.70.0` declares `typescript: ">=4.8.4 <6.1.0"` — TS 7 is explicitly unsupported by the linter. This is exactly the "tooling lags" fallback the plan anticipated. TS 7's only benefit here was compile speed we do not need.                                                                                                                                                      |
+| ESLint `^9` (scaffold default) | **`^9` retained**      | `eslint-config-next@16.3.5` declares `eslint: ">=9.0.0"`, so 10 _looks_ supported — but ESLint 10 crashes on `eslint-plugin-react@7.37.5` (a transitive dep): `contextOrFilename.getFilename is not a function`. The declared peer range lied; verified by upgrading and reverting. Note ESLint 9.39.5 is flagged EOL by npm — revisit when `eslint-config-next` ships a 10-compatible plugin chain. |
+| shadcn primitives: pin Radix   | **Confirmed and done** | The CLI exposes `-b, --base <base>` taking `base \| radix \| aria`, which confirms the Base UI default shift. Initialised with `-b radix -p nova`; `radix-ui@^1.6.7` (stable) installed rather than `@base-ui-components/react@1.0.0-rc.0`.                                                                                                                                                          |
+| Recharts 3.10.1                | **3.8.0**              | Pinned by the shadcn `chart` registry entry. Kept, since it is the version their chart wrapper is tested against.                                                                                                                                                                                                                                                                                    |
+| React 19.3.0                   | **19.2.8**             | Pinned by `create-next-app@16.3.5`; the combination Next 16.3.5 was tested with.                                                                                                                                                                                                                                                                                                                     |
+| `@types/node ^24`              | **`^22`**              | 22.20.2 is the latest published; no 24.x line exists yet. Harmless — Node 24 runtime is unaffected.                                                                                                                                                                                                                                                                                                  |
+| shadcn `form` component        | **Deferred**           | The CLI silently no-ops on `form` in the `radix-nova` style (registry check succeeds, no file written, no error). `react-hook-form` + `@hookform/resolvers` are installed; the thin wrapper will be hand-written in Phase 4 when forms are actually built.                                                                                                                                           |
+| `.env.example` committed       | **Not created**        | Blocked by a permission deny rule covering `.env*` in this environment. The required keys are documented in `README.md` instead, and `.env.local` must be created by hand.                                                                                                                                                                                                                           |
+
+**Verified at the end of Phase 1:** `pnpm typecheck`, `pnpm lint`, `pnpm build` all clean;
+28 domain tests pass; all 8 routes return 200; the month selector round-trips through the URL;
+`?m=2026-07` reaches a past month (backfill path); `?m=2026-13` degrades to the current month
+rather than erroring; "current month" resolves correctly in `Asia/Kolkata`.

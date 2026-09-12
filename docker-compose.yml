@@ -1,0 +1,26 @@
+# Local Postgres for Munnudi.
+#   docker compose up -d      start
+#   docker compose down       stop (data persists in the named volume)
+#   docker compose down -v    stop AND destroy data
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: munnudi-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: munnudi
+      POSTGRES_PASSWORD: munnudi_local_dev
+      POSTGRES_DB: munnudi
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "5433:5432" # 5433 on the host to avoid clashing with any local Postgres
+    volumes:
+      - munnudi-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U munnudi -d munnudi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  munnudi-pgdata:
