@@ -1,0 +1,46 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+/dist
+
+# testing
+/coverage
+
+# misc
+.DS_Store
+*.pem
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files — NEVER commit secrets
+.env
+.env*.local
+.env.production
+
+# vercel / typescript build info
+.vercel
+*.tsbuildinfo
+
+# database backups & exports (local data — keep out of git)
+/backups/
+/exports/
+
+# docker volumes
+/.docker-data/
