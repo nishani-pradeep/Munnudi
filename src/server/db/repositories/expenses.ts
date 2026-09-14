@@ -29,7 +29,11 @@ export async function listMonth(propertyId: string, month: MonthKey) {
     .innerJoin(expenseCategories, eq(expenseCategories.id, expenses.categoryId))
     .leftJoin(units, eq(units.id, expenses.unitId))
     .where(
-      and(eq(expenses.propertyId, propertyId), eq(expenses.month, month), isNull(expenses.deletedAt)),
+      and(
+        eq(expenses.propertyId, propertyId),
+        eq(expenses.month, month),
+        isNull(expenses.deletedAt),
+      ),
     )
     .orderBy(desc(expenses.expenseDate), desc(expenses.createdAt));
 }
@@ -48,7 +52,11 @@ export async function listDeletedForMonth(propertyId: string, month: MonthKey) {
     .from(expenses)
     .innerJoin(expenseCategories, eq(expenseCategories.id, expenses.categoryId))
     .where(
-      and(eq(expenses.propertyId, propertyId), eq(expenses.month, month), isNotNull(expenses.deletedAt)),
+      and(
+        eq(expenses.propertyId, propertyId),
+        eq(expenses.month, month),
+        isNotNull(expenses.deletedAt),
+      ),
     )
     .orderBy(desc(expenses.updatedAt));
 }
@@ -81,7 +89,13 @@ export async function updateExpense(
   const result = await db
     .update(expenses)
     .set({ ...input, updatedAt: new Date() })
-    .where(and(eq(expenses.id, expenseId), eq(expenses.propertyId, propertyId), isNull(expenses.deletedAt)))
+    .where(
+      and(
+        eq(expenses.id, expenseId),
+        eq(expenses.propertyId, propertyId),
+        isNull(expenses.deletedAt),
+      ),
+    )
     .returning({ id: expenses.id });
   return result.length > 0;
 }
@@ -90,7 +104,13 @@ export async function softDeleteExpense(propertyId: string, expenseId: string): 
   const result = await db
     .update(expenses)
     .set({ deletedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(expenses.id, expenseId), eq(expenses.propertyId, propertyId), isNull(expenses.deletedAt)))
+    .where(
+      and(
+        eq(expenses.id, expenseId),
+        eq(expenses.propertyId, propertyId),
+        isNull(expenses.deletedAt),
+      ),
+    )
     .returning({ id: expenses.id });
   return result.length > 0;
 }
@@ -100,7 +120,11 @@ export async function restoreExpense(propertyId: string, expenseId: string): Pro
     .update(expenses)
     .set({ deletedAt: null, updatedAt: new Date() })
     .where(
-      and(eq(expenses.id, expenseId), eq(expenses.propertyId, propertyId), isNotNull(expenses.deletedAt)),
+      and(
+        eq(expenses.id, expenseId),
+        eq(expenses.propertyId, propertyId),
+        isNotNull(expenses.deletedAt),
+      ),
     )
     .returning({ id: expenses.id });
   return result.length > 0;

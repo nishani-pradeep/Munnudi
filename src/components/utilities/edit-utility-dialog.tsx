@@ -27,7 +27,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { saveUtilityAction } from "@/server/actions/utilities";
 import { computeUsage } from "@/domain/utilities";
 import type { UtilityRow } from "@/server/db/repositories/utility-records";
@@ -163,9 +170,9 @@ export function EditUtilityDialog({ row, month }: { row: UtilityRow; month: Mont
               />
             </div>
 
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Usage:{" "}
-              <span className="text-foreground font-medium">
+              <span className="font-medium text-foreground">
                 {previewUsage === null ? "Not entered" : `${previewUsage} ${row.uomSnapshot}`}
               </span>
             </p>
@@ -177,7 +184,11 @@ export function EditUtilityDialog({ row, month }: { row: UtilityRow; month: Mont
                 <FormItem>
                   <FormLabel>Manual usage override (optional)</FormLabel>
                   <FormControl>
-                    <Input inputMode="decimal" placeholder="Leave blank to use readings" {...field} />
+                    <Input
+                      inputMode="decimal"
+                      placeholder="Leave blank to use readings"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -253,7 +264,10 @@ export function EditUtilityDialog({ row, month }: { row: UtilityRow; month: Mont
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center gap-2 space-y-0">
                   <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={(c) => field.onChange(c === true)} />
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(c) => field.onChange(c === true)}
+                    />
                   </FormControl>
                   <FormLabel className="font-normal">No bill this month</FormLabel>
                 </FormItem>

@@ -22,14 +22,23 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const expenseFieldsSchema = z.object({
   categoryId: z.string().uuid(),
   unitId: z.string().uuid().or(z.literal("")),
-  expenseDate: z.string().trim().refine((v) => v === "" || DATE_RE.test(v), "Invalid date"),
-  amount: z.string().trim().refine((v) => MONEY_RE.test(v), "Enter a valid amount, e.g. 500 or 499.99"),
+  expenseDate: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || DATE_RE.test(v), "Invalid date"),
+  amount: z
+    .string()
+    .trim()
+    .refine((v) => MONEY_RE.test(v), "Enter a valid amount, e.g. 500 or 499.99"),
   comment: z.string().trim().max(500, "Keep comments under 500 characters"),
 });
 
 /** categoryId (and unitId, when given) must belong to the active property — the chokepoint here, since a new expense has no existing row to scope a check against. */
 async function assertOwnership(propertyId: string, categoryId: string, unitId: string) {
-  const [categories, units] = await Promise.all([listCategories(propertyId), listActiveUnits(propertyId)]);
+  const [categories, units] = await Promise.all([
+    listCategories(propertyId),
+    listActiveUnits(propertyId),
+  ]);
   if (!categories.some((c) => c.id === categoryId)) {
     throw new Error("Category not found for the active property.");
   }

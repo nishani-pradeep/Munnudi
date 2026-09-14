@@ -2,7 +2,14 @@ import { Gauge } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { EditUtilityDialog } from "@/components/utilities/edit-utility-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { monthFromParam, type SearchParams } from "@/lib/month-param";
 import { formatMonthLong } from "@/domain/month";
@@ -92,7 +99,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
                     <TableCell className="text-muted-foreground">
                       {row.billPaid === null ? "—" : row.billPaid ? "Yes" : "No"}
                     </TableCell>
-                    <TableCell className="text-muted-foreground hidden max-w-[14rem] truncate md:table-cell">
+                    <TableCell className="hidden max-w-[14rem] truncate text-muted-foreground md:table-cell">
                       {row.comment ?? ""}
                     </TableCell>
                     <TableCell>

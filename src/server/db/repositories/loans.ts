@@ -6,7 +6,11 @@ import { monthsBetween } from "@/domain/month";
 import { parsePaise, type Paise } from "@/domain/money";
 
 export async function listLoans(propertyId: string, opts: { includeClosed: boolean }) {
-  const rows = await db.select().from(loans).where(eq(loans.propertyId, propertyId)).orderBy(loans.name);
+  const rows = await db
+    .select()
+    .from(loans)
+    .where(eq(loans.propertyId, propertyId))
+    .orderBy(loans.name);
   return opts.includeClosed ? rows : rows.filter((l) => l.active);
 }
 
@@ -34,7 +38,11 @@ export async function createLoan(propertyId: string, input: LoanInput) {
 }
 
 /** Scoped by propertyId — the chokepoint (decision 8) applied to loan edits. */
-export async function updateLoan(propertyId: string, loanId: string, input: LoanInput): Promise<boolean> {
+export async function updateLoan(
+  propertyId: string,
+  loanId: string,
+  input: LoanInput,
+): Promise<boolean> {
   const result = await db
     .update(loans)
     .set({ ...input, updatedAt: new Date() })
@@ -43,7 +51,11 @@ export async function updateLoan(propertyId: string, loanId: string, input: Loan
   return result.length > 0;
 }
 
-export async function closeLoan(propertyId: string, loanId: string, closedMonth: MonthKey): Promise<boolean> {
+export async function closeLoan(
+  propertyId: string,
+  loanId: string,
+  closedMonth: MonthKey,
+): Promise<boolean> {
   const result = await db
     .update(loans)
     .set({ closedMonth, active: false, updatedAt: new Date() })
@@ -77,7 +89,10 @@ export type AmortizationAnchor = {
  * elapsed months from openingAsOfMonth — a deliberate simplification, not
  * bank-grade amortization.
  */
-export async function resolveAmortizationAnchor(loan: LoanRow, targetMonth: MonthKey): Promise<AmortizationAnchor> {
+export async function resolveAmortizationAnchor(
+  loan: LoanRow,
+  targetMonth: MonthKey,
+): Promise<AmortizationAnchor> {
   const [latest] = await db
     .select({ effectiveOutstanding: loanLedger.effectiveOutstanding })
     .from(loanLedger)

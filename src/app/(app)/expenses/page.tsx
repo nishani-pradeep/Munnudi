@@ -2,7 +2,14 @@ import { Plus, ReceiptText } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { ExpenseDialog } from "@/components/expenses/expense-dialog";
 import { DeleteExpenseButton } from "@/components/expenses/delete-expense-button";
@@ -66,8 +73,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
         />
       ) : (
         <>
-          <p className="text-muted-foreground mb-3 text-sm">
-            Total: <span className="text-foreground font-medium">{formatInr(total)}</span> across{" "}
+          <p className="mb-3 text-sm text-muted-foreground">
+            Total: <span className="font-medium text-foreground">{formatInr(total)}</span> across{" "}
             {rows.length} {rows.length === 1 ? "entry" : "entries"}
           </p>
           <div className="overflow-x-auto rounded-lg border">
@@ -86,10 +93,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
                 {rows.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="font-medium">{row.categoryName}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatInr(parsePaise(row.amount))}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.expenseDate ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.unitCode ?? "Common"}</TableCell>
-                    <TableCell className="text-muted-foreground hidden max-w-[16rem] truncate md:table-cell">
+                    <TableCell className="text-right tabular-nums">
+                      {formatInr(parsePaise(row.amount))}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.expenseDate ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {row.unitCode ?? "Common"}
+                    </TableCell>
+                    <TableCell className="hidden max-w-[16rem] truncate text-muted-foreground md:table-cell">
                       {row.comment ?? ""}
                     </TableCell>
                     <TableCell>
@@ -126,7 +139,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
       {deletedRows.length > 0 ? (
         <Card className="mt-6 border-dashed">
           <CardContent className="space-y-2 px-4 py-3">
-            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Recently deleted
             </p>
             {deletedRows.map((row) => (

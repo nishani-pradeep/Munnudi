@@ -35,8 +35,8 @@ export function DeleteExpenseButton({ expenseId }: { expenseId: string }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this expense?</AlertDialogTitle>
           <AlertDialogDescription>
-            It will disappear from this month&apos;s totals but can be restored from
-            &quot;Recently deleted&quot; below.
+            It will disappear from this month&apos;s totals but can be restored from &quot;Recently
+            deleted&quot; below.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -25,7 +25,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { createExpenseAction, updateExpenseAction } from "@/server/actions/expenses";
 import type { MonthKey } from "@/domain/month";
 
@@ -35,7 +42,10 @@ const formSchema = z.object({
   categoryId: z.string().uuid("Choose a category"),
   unitId: z.string(),
   expenseDate: z.string().trim(),
-  amount: z.string().trim().refine((v) => MONEY_RE.test(v), "Enter a valid amount, e.g. 500 or 499.99"),
+  amount: z
+    .string()
+    .trim()
+    .refine((v) => MONEY_RE.test(v), "Enter a valid amount, e.g. 500 or 499.99"),
   comment: z.string().trim().max(500, "Keep comments under 500 characters"),
 });
 

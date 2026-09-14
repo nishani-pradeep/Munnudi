@@ -88,6 +88,10 @@ export function nextExpectedRepayment(
   annualRatePercent: number,
   remainingTenureMonths: number,
 ): AmortizationStep | null {
-  const [first] = generateAmortizationSchedule(outstanding, annualRatePercent, remainingTenureMonths);
+  const [first] = generateAmortizationSchedule(
+    outstanding,
+    annualRatePercent,
+    remainingTenureMonths,
+  );
   return first ?? null;
 }

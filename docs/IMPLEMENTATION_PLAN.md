@@ -613,3 +613,83 @@ default alone will not do it.
 (from Phase 1), `.env.local`/`.env.example` (created via a `cp` workaround —
 the Write/Read tools have a deny rule on `.env*` filenames in this
 environment; Bash `cp` was unaffected).
+
+---
+
+## Phase 5 (Utilities + Expenses) — complete. Phase 6 (Loans) — in progress, paused
+
+Prompted directly: Utilities/Expenses screens were confirmed still missing, and Loans was
+asked to be richer than originally scoped — auto-computed amortization from principal/tenure/
+rate, a one-click "mark EMI paid", add/close-loan with history preserved for charts. The full
+design (schema addition, new domain modules, the amortization-anchor approach, and the
+per-screen repository/action/page breakdown) is recorded in the "Utilities screen" / "Expenses
+screen" / "Loans screen" design that was planned for this round — this section records what
+was actually built, verified, and what remains, so the work resumes cleanly.
+
+### Done and verified (Utilities + Expenses)
+
+- **Schema**: `loans.remaining_tenure_months` (nullable `integer` + non-negative CHECK) added
+  via `drizzle/0002_add_loan_tenure.sql` — a plain column, so unlike Phase 2's generated
+  columns this needed **no hand-editing**; `drizzle-kit generate` produced exactly the two
+  correct DDL statements on its own.
+- **`src/db/schema/loan-ledger-view.ts`**: a typed, read-only Drizzle binding to the hand-written
+  `v_loan_ledger` view via `pgView(...).existing()`. Verified empirically that `.existing()`
+  does exactly what it should: running `drizzle-kit generate` afterward reported
+  **"No schema changes, nothing to migrate"** — Drizzle never tries to CREATE or diff a view
+  marked existing, confirmed rather than assumed.
+- **`src/domain/loans.ts`**: the standard reducing-balance EMI formula, pure and unit-tested
+  (11 tests). Cross-checked against the commonly-cited textbook figure (₹1,00,000 at 10% p.a.
+  for 12 months → EMI ≈ ₹8,791.59, computed to the paisa); the full-schedule tests additionally
+  confirm total principal across all 12 months equals the original outstanding **exactly** (no
+  paisa leaks or double-counts from per-month rounding) and that the final month's principal is
+  capped so the closing balance is exactly zero, never negative.
+- **`src/domain/utilities.ts`**: `computeUsage` — override wins, missing reading returns `null`
+  (never `0`), 4 tests.
+- **Utilities screen** (`/utilities`): repository (`listMonthForDisplay` — renders one virtual
+  row per active unit × {ELECTRICITY, WATER} even before any DB row exists; `upsertUtilityRecord`),
+  `saveUtilityAction`, edit dialog, and the page. **Repeated a Phase 2 lesson correctly on the
+  first attempt this time**: the upsert's `onConflictDoUpdate` uses `targetWhere:
+  isNull(utilityRecords.deletedAt)` to match the partial unique index's exact predicate — the
+  same class of bug that bit `unit_month_records` in Phase 2, avoided here because it was
+  called out explicitly in this round's plan before writing the code.
+- **Expenses screen** (`/expenses`): repository (list/create/update/soft-delete/restore),
+  4 Server Actions, add/edit dialog, delete-with-confirmation (`AlertDialog`, per PRD 15), and a
+  "Recently deleted" panel on the same page satisfying PRD 22's recoverability requirement
+  ahead of the full History page (Phase 8).
+- Both screens smoke-tested against the live demo-seeded database (200 responses, real data
+  rendering — Electricity/Water rows, category names, computed totals).
+- `pnpm typecheck && pnpm lint && pnpm test` all clean (52 tests passing, 0 warnings) as of this
+  pause point.
+
+### Loans — designed and partially built, paused here
+
+**Done:** the schema column, the `v_loan_ledger` typed view binding, the full amortization
+engine in `src/domain/loans.ts`, and `src/server/db/repositories/loans.ts` (`listLoans`,
+`createLoan`, `updateLoan`, `closeLoan`, `reopenLoan`, and `resolveAmortizationAnchor` — the
+function that finds "the latest effective outstanding before this month" from `v_loan_ledger`,
+falling back to `openingOutstanding`, and ticks `remainingTenureMonths` down by elapsed months
+from `openingAsOfMonth`). All of it typechecks and lints clean.
+
+**Not yet built** (resume here, in this order):
+1. `src/server/db/repositories/loan-repayments.ts` — `getForMonth(propertyId, loanId, month)`,
+   `upsertRepayment(...)` (same partial-unique-index `targetWhere` pattern as utilities/rent:
+   the index is `(loan_id, month) WHERE deleted_at IS NULL`).
+2. `src/server/actions/loans.ts` — `createLoanAction`, `updateLoanAction`, `closeLoanAction`,
+   `reopenLoanAction`, `saveLoanRepaymentAction` (the shared write path behind both "Mark Paid"
+   and manual entry).
+3. UI: a loan add/edit dialog (mirrors `ExpenseDialog`'s create-vs-edit pattern), a close-loan
+   confirmation (mirrors `DeleteExpenseButton`'s `AlertDialog` pattern, showing current
+   outstanding as an FYI, not a hard block), a repayment dialog that is pre-filled from
+   `nextExpectedRepayment(...)` when tenure is known and no repayment exists yet for the month
+   (with a plain blank manual-entry fallback when tenure is unknown or `expectsMonthlyPayment`
+   is false), and the `/loans` page itself: active loans with per-month status, a collapsed
+   "Closed loans" section below.
+4. Full verification pass per the plan's Loans checklist: edit a seeded demo loan to add
+   tenure, confirm the computed EMI is in the right ballpark versus what `demo.ts` already
+   computed for it; "Mark Paid" produces a `v_loan_ledger` row with `drift = 0`; add + mark-paid
+   + close a brand-new loan and confirm its history survives the close; a crafted foreign loan
+   id on `updateLoanAction` fails closed.
+
+**Explicitly still out of scope after Loans is finished**: Dashboard/charts (Phase 7, next
+immediately after), the full History page (Phase 8), and the month-close checklist UI — all
+as originally scoped, not newly dropped.

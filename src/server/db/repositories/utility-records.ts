@@ -32,7 +32,10 @@ export type UtilityRow = {
  * (active unit x utility type) regardless of whether a DB row exists yet,
  * so the page has a stable, complete grid to render and edit.
  */
-export async function listMonthForDisplay(propertyId: string, month: MonthKey): Promise<UtilityRow[]> {
+export async function listMonthForDisplay(
+  propertyId: string,
+  month: MonthKey,
+): Promise<UtilityRow[]> {
   const activeUnits = await listActiveUnits(propertyId);
   const existing = await db
     .select()
@@ -112,7 +115,10 @@ export type UpsertUtilityInput = {
  * unit_month_records in Phase 2: naming only the columns is not enough when
  * the backing index is partial.
  */
-export async function upsertUtilityRecord(propertyId: string, input: UpsertUtilityInput): Promise<void> {
+export async function upsertUtilityRecord(
+  propertyId: string,
+  input: UpsertUtilityInput,
+): Promise<void> {
   await db
     .insert(utilityRecords)
     .values({
