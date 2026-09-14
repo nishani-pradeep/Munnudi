@@ -1,6 +1,7 @@
 import {
   boolean,
   check,
+  integer,
   numeric,
   pgTable,
   text,
@@ -29,6 +30,11 @@ export const loans = pgTable(
     interestRate: numeric("interest_rate", { precision: 6, scale: 3 }),
     // Nullable: a bullet-repayment gold loan has no fixed monthly EMI.
     scheduledEmi: numeric("scheduled_emi", { precision: 14, scale: 2 }),
+    // Months remaining AS OF openingAsOfMonth — same anchor point as
+    // openingOutstanding. Optional: a loan with no tenure recorded simply
+    // gets no auto-computed amortization schedule (src/domain/loans.ts) and
+    // falls back to pure manual repayment entry.
+    remainingTenureMonths: integer("remaining_tenure_months"),
     // Suppresses a false "repayment missing" flag (PRD 14) for loans that are
     // not expected to have a transaction every month.
     expectsMonthlyPayment: boolean("expects_monthly_payment").notNull().default(true),
@@ -48,6 +54,10 @@ export const loans = pgTable(
     check(
       "loans_closed_month_format",
       sql`${t.closedMonth} IS NULL OR ${t.closedMonth} ~ '^[0-9]{4}-(0[1-9]|1[0-2])$'`,
+    ),
+    check(
+      "loans_remaining_tenure_nonneg",
+      sql`${t.remainingTenureMonths} IS NULL OR ${t.remainingTenureMonths} >= 0`,
     ),
   ],
 );

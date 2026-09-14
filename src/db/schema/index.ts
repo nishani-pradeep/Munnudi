@@ -9,3 +9,4 @@ export * from "./loans";
 export * from "./loan-repayments";
 export * from "./monthly-status";
 export * from "./audit-log";
+export * from "./loan-ledger-view";
