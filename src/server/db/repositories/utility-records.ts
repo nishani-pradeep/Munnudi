@@ -1,6 +1,6 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, lte } from "drizzle-orm";
 import { db } from "@/db/client";
-import { utilityRecords } from "@/db/schema";
+import { units, utilityRecords } from "@/db/schema";
 import type { MonthKey } from "@/domain/month";
 import { listActiveUnits } from "./units";
 
@@ -152,3 +152,116 @@ export async function upsertUtilityRecord(
       },
     });
 }
+
+export async function softDeleteUtilityRecord(
+  propertyId: string,
+  recordId: string,
+): Promise<boolean> {
+  const result = await db
+    .update(utilityRecords)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(
+      and(
+        eq(utilityRecords.id, recordId),
+        eq(utilityRecords.propertyId, propertyId),
+        isNull(utilityRecords.deletedAt),
+      ),
+    )
+    .returning({ id: utilityRecords.id });
+  return result.length > 0;
+}
+
+export async function restoreUtilityRecord(
+  propertyId: string,
+  recordId: string,
+): Promise<boolean> {
+  const [deleted] = await db
+    .select({
+      unitId: utilityRecords.unitId,
+      month: utilityRecords.month,
+      utilityType: utilityRecords.utilityType,
+    })
+    .from(utilityRecords)
+    .where(
+      and(
+        eq(utilityRecords.id, recordId),
+        eq(utilityRecords.propertyId, propertyId),
+        isNotNull(utilityRecords.deletedAt),
+      ),
+    );
+  if (!deleted) return false;
+
+  // Check if an active row already exists for this unit+month+type
+  const [conflict] = await db
+    .select({ id: utilityRecords.id })
+    .from(utilityRecords)
+    .where(
+      and(
+        eq(utilityRecords.unitId, deleted.unitId),
+        eq(utilityRecords.month, deleted.month),
+        eq(utilityRecords.utilityType, deleted.utilityType),
+        isNull(utilityRecords.deletedAt),
+      ),
+    );
+  if (conflict)
+    throw new Error("An active utility record already exists for this unit, month, and type.");
+
+  const result = await db
+    .update(utilityRecords)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(eq(utilityRecords.id, recordId))
+    .returning({ id: utilityRecords.id });
+  return result.length > 0;
+}
+
+/** Recently soft-deleted utility records for the month, for the "Recently deleted" restore panel. */
+export async function listDeletedForMonth(propertyId: string, month: MonthKey) {
+  return db
+    .select({
+      id: utilityRecords.id,
+      unitCode: units.unitCode,
+      utilityType: utilityRecords.utilityType,
+      billAmount: utilityRecords.billAmount,
+    })
+    .from(utilityRecords)
+    .innerJoin(units, eq(units.id, utilityRecords.unitId))
+    .where(
+      and(
+        eq(utilityRecords.propertyId, propertyId),
+        eq(utilityRecords.month, month),
+        isNotNull(utilityRecords.deletedAt),
+      ),
+    )
+    .orderBy(desc(utilityRecords.updatedAt));
+}
+
+export async function listForMonthRange(
+  propertyId: string,
+  fromMonth: MonthKey,
+  toMonth: MonthKey,
+) {
+  return db
+    .select({
+      month: utilityRecords.month,
+      unitId: utilityRecords.unitId,
+      unitCode: units.unitCode,
+      utilityType: utilityRecords.utilityType,
+      previousReading: utilityRecords.previousReading,
+      currentReading: utilityRecords.currentReading,
+      usageOverride: utilityRecords.usageOverride,
+      billAmount: utilityRecords.billAmount,
+    })
+    .from(utilityRecords)
+    .innerJoin(units, eq(units.id, utilityRecords.unitId))
+    .where(
+      and(
+        eq(utilityRecords.propertyId, propertyId),
+        gte(utilityRecords.month, fromMonth),
+        lte(utilityRecords.month, toMonth),
+        isNull(utilityRecords.deletedAt),
+      ),
+    )
+    .orderBy(utilityRecords.month, units.unitCode);
+}
+
+export type UtilityRangeRow = Awaited<ReturnType<typeof listForMonthRange>>[number];

@@ -43,6 +43,7 @@ export const loans = pgTable(
     // appear in past months of the Loan Balance Trend chart.
     closedMonth: varchar("closed_month", { length: 7 }),
     active: boolean("active").notNull().default(true),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

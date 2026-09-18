@@ -7,6 +7,8 @@ import { getActivePropertyId } from "@/server/db/scope";
 import {
   ensureMonthGenerated,
   updateRentPayment,
+  softDeleteRentRecord,
+  restoreRentRecord,
 } from "@/server/db/repositories/unit-month-records";
 import { monthKey } from "@/domain/month";
 import { parsePaise, toNumericString } from "@/domain/money";
@@ -71,6 +73,26 @@ export const saveRentAction = actionClient
       throw new Error("Rent record not found for the active property.");
     }
 
+    revalidatePath("/rent");
+    return { ok: true as const };
+  });
+
+export const deleteRentAction = actionClient
+  .inputSchema(z.object({ recordId: z.string().uuid() }))
+  .action(async ({ parsedInput }) => {
+    const propertyId = await getActivePropertyId();
+    const deleted = await softDeleteRentRecord(propertyId, parsedInput.recordId);
+    if (!deleted) throw new Error("Rent record not found for the active property.");
+    revalidatePath("/rent");
+    return { ok: true as const };
+  });
+
+export const restoreRentAction = actionClient
+  .inputSchema(z.object({ recordId: z.string().uuid() }))
+  .action(async ({ parsedInput }) => {
+    const propertyId = await getActivePropertyId();
+    const restored = await restoreRentRecord(propertyId, parsedInput.recordId);
+    if (!restored) throw new Error("Deleted rent record not found for the active property.");
     revalidatePath("/rent");
     return { ok: true as const };
   });

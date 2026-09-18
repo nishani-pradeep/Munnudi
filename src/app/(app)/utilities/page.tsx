@@ -2,6 +2,8 @@ import { Gauge } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { EditUtilityDialog } from "@/components/utilities/edit-utility-dialog";
+import { DeleteUtilityButton } from "@/components/utilities/delete-utility-button";
+import { RestoreUtilityButton } from "@/components/utilities/restore-utility-button";
 import {
   Table,
   TableBody,
@@ -11,12 +13,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { monthFromParam, type SearchParams } from "@/lib/month-param";
 import { formatMonthLong } from "@/domain/month";
 import { formatInr, parsePaise } from "@/domain/money";
 import { computeUsage } from "@/domain/utilities";
 import { getActivePropertyId } from "@/server/db/scope";
-import { listMonthForDisplay } from "@/server/db/repositories/utility-records";
+import {
+  listMonthForDisplay,
+  listDeletedForMonth,
+} from "@/server/db/repositories/utility-records";
 
 const METER_EVENT_LABEL: Record<string, string> = {
   NONE: "",
@@ -31,7 +37,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const label = formatMonthLong(month);
 
   const propertyId = await getActivePropertyId();
-  const rows = await listMonthForDisplay(propertyId, month);
+  const [rows, deletedRows] = await Promise.all([
+    listMonthForDisplay(propertyId, month),
+    listDeletedForMonth(propertyId, month),
+  ]);
 
   return (
     <>
@@ -56,7 +65,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
                 <TableHead className="text-right">Bill</TableHead>
                 <TableHead>Paid</TableHead>
                 <TableHead className="hidden md:table-cell">Comment</TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-20" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,7 +112,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
                       {row.comment ?? ""}
                     </TableCell>
                     <TableCell>
-                      <EditUtilityDialog row={row} month={month} />
+                      <div className="flex items-center">
+                        <EditUtilityDialog row={row} month={month} />
+                        {row.id !== null ? (
+                          <DeleteUtilityButton recordId={row.id} />
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -112,6 +126,25 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           </Table>
         </div>
       )}
+
+      {deletedRows.length > 0 ? (
+        <Card className="mt-6 border-dashed">
+          <CardContent className="space-y-2 px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Recently deleted
+            </p>
+            {deletedRows.map((row) => (
+              <div key={row.id} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {row.unitCode} · {row.utilityType === "ELECTRICITY" ? "Electricity" : "Water"}
+                  {row.billAmount ? ` · ${formatInr(parsePaise(row.billAmount))}` : ""}
+                </span>
+                <RestoreUtilityButton recordId={row.id} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
     </>
   );
 }

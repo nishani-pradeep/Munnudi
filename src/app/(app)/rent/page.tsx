@@ -3,6 +3,8 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { RentStatusBadge } from "@/components/rent/status-badge";
 import { EditRentDialog } from "@/components/rent/edit-rent-dialog";
+import { DeleteRentButton } from "@/components/rent/delete-rent-button";
+import { RestoreRentButton } from "@/components/rent/restore-rent-button";
 import {
   Table,
   TableBody,
@@ -11,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { monthFromParam, type SearchParams } from "@/lib/month-param";
 import { formatMonthLong } from "@/domain/month";
 import { formatInr, parsePaise, sum, ZERO } from "@/domain/money";
@@ -18,6 +21,7 @@ import { getActivePropertyId } from "@/server/db/scope";
 import {
   ensureMonthGenerated,
   listMonthForDisplay,
+  listDeletedForMonth,
 } from "@/server/db/repositories/unit-month-records";
 
 export default async function Page({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -27,7 +31,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
   const propertyId = await getActivePropertyId();
   await ensureMonthGenerated(propertyId, month);
-  const rows = await listMonthForDisplay(propertyId, month);
+  const [rows, deletedRows] = await Promise.all([
+    listMonthForDisplay(propertyId, month),
+    listDeletedForMonth(propertyId, month),
+  ]);
 
   const billable = rows.filter((r) => r.isBillable);
   const target = sum(billable.map((r) => parsePaise(r.expectedRentSnapshot)));
@@ -67,7 +74,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
                 <TableHead>Status</TableHead>
                 <TableHead>Payment date</TableHead>
                 <TableHead className="hidden md:table-cell">Comment</TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-20" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -103,9 +110,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
                       {row.comment ?? ""}
                     </TableCell>
                     <TableCell>
-                      {row.isBillable ? (
-                        <EditRentDialog row={row} expectedLabel={formatInr(expected)} />
-                      ) : null}
+                      <div className="flex items-center">
+                        {row.isBillable ? (
+                          <EditRentDialog row={row} expectedLabel={formatInr(expected)} />
+                        ) : null}
+                        <DeleteRentButton recordId={row.id} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -114,6 +124,25 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
           </Table>
         </div>
       )}
+
+      {deletedRows.length > 0 ? (
+        <Card className="mt-6 border-dashed">
+          <CardContent className="space-y-2 px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Recently deleted
+            </p>
+            {deletedRows.map((row) => (
+              <div key={row.id} className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {row.unitCode} · Expected {formatInr(parsePaise(row.expectedRentSnapshot))}
+                  {row.paidAmount ? ` · Paid ${formatInr(parsePaise(row.paidAmount))}` : ""}
+                </span>
+                <RestoreRentButton recordId={row.id} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
     </>
   );
 }

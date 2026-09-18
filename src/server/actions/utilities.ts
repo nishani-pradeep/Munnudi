@@ -4,7 +4,12 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { actionClient } from "./client";
 import { getActivePropertyId } from "@/server/db/scope";
-import { upsertUtilityRecord, UTILITY_TYPES } from "@/server/db/repositories/utility-records";
+import {
+  upsertUtilityRecord,
+  softDeleteUtilityRecord,
+  restoreUtilityRecord,
+  UTILITY_TYPES,
+} from "@/server/db/repositories/utility-records";
 import { listActiveUnits } from "@/server/db/repositories/units";
 import { monthKey } from "@/domain/month";
 
@@ -68,6 +73,26 @@ export const saveUtilityAction = actionClient
       comment: toNullable(parsedInput.comment),
     });
 
+    revalidatePath("/utilities");
+    return { ok: true as const };
+  });
+
+export const deleteUtilityAction = actionClient
+  .inputSchema(z.object({ recordId: z.string().uuid() }))
+  .action(async ({ parsedInput }) => {
+    const propertyId = await getActivePropertyId();
+    const deleted = await softDeleteUtilityRecord(propertyId, parsedInput.recordId);
+    if (!deleted) throw new Error("Utility record not found for the active property.");
+    revalidatePath("/utilities");
+    return { ok: true as const };
+  });
+
+export const restoreUtilityAction = actionClient
+  .inputSchema(z.object({ recordId: z.string().uuid() }))
+  .action(async ({ parsedInput }) => {
+    const propertyId = await getActivePropertyId();
+    const restored = await restoreUtilityRecord(propertyId, parsedInput.recordId);
+    if (!restored) throw new Error("Deleted utility record not found for the active property.");
     revalidatePath("/utilities");
     return { ok: true as const };
   });

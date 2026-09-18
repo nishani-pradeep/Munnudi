@@ -45,7 +45,7 @@ const formSchema = z.object({
   amount: z
     .string()
     .trim()
-    .refine((v) => MONEY_RE.test(v), "Enter a valid amount, e.g. 500 or 499.99"),
+    .refine((v) => MONEY_RE.test(v) && Number(v) > 0, "Amount must be greater than 0"),
   comment: z.string().trim().max(500, "Keep comments under 500 characters"),
 });
 

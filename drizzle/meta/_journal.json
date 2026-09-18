@@ -22,6 +22,13 @@
       "when": 1789402615178,
       "tag": "0002_add_loan_tenure",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789667797530,
+      "tag": "0003_hesitant_ken_ellis",
+      "breakpoints": true
     }
   ]
 }

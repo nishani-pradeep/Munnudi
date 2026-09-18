@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, lte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { expenseCategories, expenses, units } from "@/db/schema";
 import type { MonthKey } from "@/domain/month";
@@ -129,3 +129,30 @@ export async function restoreExpense(propertyId: string, expenseId: string): Pro
     .returning({ id: expenses.id });
   return result.length > 0;
 }
+
+export async function listForMonthRange(
+  propertyId: string,
+  fromMonth: MonthKey,
+  toMonth: MonthKey,
+) {
+  return db
+    .select({
+      month: expenses.month,
+      amount: expenses.amount,
+      isMaintenance: expenseCategories.isMaintenance,
+      categoryName: expenseCategories.name,
+    })
+    .from(expenses)
+    .innerJoin(expenseCategories, eq(expenseCategories.id, expenses.categoryId))
+    .where(
+      and(
+        eq(expenses.propertyId, propertyId),
+        gte(expenses.month, fromMonth),
+        lte(expenses.month, toMonth),
+        isNull(expenses.deletedAt),
+      ),
+    )
+    .orderBy(expenses.month);
+}
+
+export type ExpenseRangeRow = Awaited<ReturnType<typeof listForMonthRange>>[number];
