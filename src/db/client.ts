@@ -1,4 +1,4 @@
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import postgres from "postgres";
@@ -11,10 +11,10 @@ if (!connectionString) {
 
 const isServerless = process.env.VERCEL === "1";
 
-function createDb() {
+function createDb(): PostgresJsDatabase<typeof schema> {
   if (isServerless) {
     const sql = neon(connectionString!);
-    return drizzleNeon(sql, { schema });
+    return drizzleNeon(sql, { schema }) as unknown as PostgresJsDatabase<typeof schema>;
   }
 
   const globalForDb = globalThis as unknown as { __munnudiSql?: postgres.Sql };
