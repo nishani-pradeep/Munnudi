@@ -693,3 +693,210 @@ from `openingAsOfMonth`). All of it typechecks and lints clean.
 **Explicitly still out of scope after Loans is finished**: Dashboard/charts (Phase 7, next
 immediately after), the full History page (Phase 8), and the month-close checklist UI — all
 as originally scoped, not newly dropped.
+
+---
+
+## Current status — September 2026
+
+### Phases completed
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| 0 | Plan into repo | ✅ Complete |
+| 1 | Foundation (Next.js 16, Tailwind 4, shadcn, Vitest) | ✅ Complete |
+| 2 | Data layer + Rent vertical slice | ✅ Complete |
+| 5 | Utilities + Expenses screens | ✅ Complete |
+| 6 | Loans (CRUD, repayments, amortization, prepayments) | ✅ Complete |
+| 7 | Dashboard (KPI cards, charts, scope toggle) | ✅ Complete |
+| 8 (partial) | Reports (6 tabs, CSV export) | ✅ Complete |
+
+### Phases not started
+
+| Phase | Scope | Notes |
+|-------|-------|-------|
+| 3 | Domain engine + PRD §22 test suite | KPI engine (102 tests) covers most of this |
+| 4 | Unit/rent settings with versioning, "apply forward" | Settings page still a placeholder |
+| 8 (remainder) | History/audit page, mobile QA, deployment | Placeholders remain |
+
+---
+
+## Architecture as built
+
+### File layout
+
+```
+src/
+├── app/(app)/
+│   ├── dashboard/page.tsx        (395 lines) — 10 KPI cards, scope toggle, 8 charts
+│   ├── expenses/page.tsx         (159 lines) — expense list with delete/restore
+│   ├── loans/
+│   │   ├── page.tsx              (373 lines) — card-per-loan layout, KPI strip
+│   │   └── [id]/page.tsx         (291 lines) — loan detail: schedule, history, prepay
+│   ├── rent/page.tsx             (148 lines) — rent census with delete/restore
+│   ├── reports/page.tsx          (400 lines) — 6 tabbed reports + CSV export
+│   ├── utilities/page.tsx        (150 lines) — utility grid with delete/restore
+│   ├── history/page.tsx          (placeholder)
+│   └── settings/page.tsx         (placeholder)
+├── components/
+│   ├── dashboard/                (12 files) — KPI card, scope toggle, 7 charts, matrix, flags
+│   ├── loans/                    (14 files) — loan-card, dialogs, amortization, prepayment
+│   ├── reports/                  (11 files) — statement, summary, charts, CSV download
+│   ├── expenses/                 (3 files)  — dialog, delete, restore
+│   ├── rent/                     (4 files)  — edit dialog, status badge, delete, restore
+│   ├── utilities/                (3 files)  — edit dialog, delete, restore
+│   └── ui/                       (24 files) — shadcn primitives
+├── domain/                       — pure calculation engine, 102 tests
+│   ├── kpi.ts                    (837 lines) — 19 functions: KPI computation + chart builders
+│   ├── money.ts                  (130 lines) — Paise branded type, INR formatting
+│   ├── month.ts                  (128 lines) — MonthKey type, ranges, arithmetic
+│   ├── loans.ts                  (97 lines)  — EMI amortization engine
+│   ├── rent.ts                   (84 lines)  — census computation
+│   └── utilities.ts              (26 lines)  — usage derivation
+├── server/
+│   ├── actions/                  — 22 server actions across 5 files
+│   │   ├── loans.ts              (266 lines) — 9 actions (CRUD + repayment + delete)
+│   │   ├── expenses.ts           (108 lines) — 4 actions
+│   │   ├── rent.ts               (98 lines)  — 4 actions
+│   │   ├── utilities.ts          (98 lines)  — 3 actions
+│   │   └── reports.ts            (85 lines)  — CSV export
+│   └── db/
+│       ├── scope.ts              — property-scoping chokepoint
+│       └── repositories/         — 8 repository files
+│           ├── loans.ts          (268 lines) — 13 functions + types
+│           ├── loan-repayments.ts(270 lines) — 11 functions + types
+│           ├── utility-records.ts(267 lines) — 7 functions + types
+│           ├── unit-month-records.ts (241 lines) — 7 functions + types
+│           ├── expenses.ts       (158 lines) — 8 functions + types
+│           ├── monthly-status.ts (31 lines)  — 1 function
+│           ├── unit-rent-versions.ts (20 lines)
+│           └── units.ts          (19 lines)
+├── db/schema/                    — 13 files, 12 tables + 1 view
+└── lib/                          — 7 utility files
+```
+
+### Database schema (4 migrations)
+
+| Migration | Purpose |
+|-----------|---------|
+| `0000_init.sql` | All 11 tables, generated columns, partial unique indexes, CHECKs |
+| `0001_audit_and_ledger.sql` | Audit trigger function + `v_loan_ledger` view |
+| `0002_add_loan_tenure.sql` | `remaining_tenure_months` on loans |
+| `0003_hesitant_ken_ellis.sql` | `deleted_at` on loans (soft-delete support) |
+
+### Key architectural patterns
+
+**1. Pure calculation engine** (`src/domain/kpi.ts`): 19 functions, no DB imports. Dashboard
+and Reports call the same functions, so totals match by construction. Uses a three-state
+`Measure` type (`value | partial | unknown`) with `basisMonths` for coverage display.
+
+**2. Scope toggle**: URL param `?scope=current|tillNow|average`. Server Component re-renders
+with scope-appropriate data. Charts always show trailing 12 months regardless of scope.
+
+**3. Card-per-loan layout**: Each loan gets an expandable Card with 3 tabs (Schedule,
+Payments, Prepayments). Dropdown menu for all actions. KPI strip at top shows portfolio
+totals. Prepayment dialog with optional remaining-balance override and EMI impact preview.
+
+**4. Soft-delete everywhere**: All 5 entity types (expenses, loan repayments, rent, utilities,
+loan masters) support soft-delete with `deletedAt` + restore. AlertDialog confirmation on
+delete, "Recently deleted" panels with restore buttons. Unique constraint conflict checks
+on restore.
+
+**5. Property scoping**: Every action calls `getActivePropertyId()`. Every repo function takes
+`propertyId` as first arg. Write operations filter by `propertyId` in WHERE. No entity ID
+from client input is trusted without property verification.
+
+**6. Partial unique indexes**: All upserts on tables with `WHERE deleted_at IS NULL` indexes
+include `targetWhere: isNull(table.deletedAt)` — a lesson learned in Phase 2 and applied
+consistently.
+
+### Dashboard: 10 KPI cards + 8 charts
+
+**KPI cards** (with scope: Current / Till Now / Average):
+1. Rental Target  2. Rent Collected  3. Rent Pending  4. Collection Rate
+5. Maintenance Paid  6. Operating Profit  7. Principal Repaid  8. Interest Paid
+9. Outstanding Principal (stock — no average)  10. Total Debt Payments
+
+**Charts**: Rent Expected vs Collected (clustered bar), Expenses by Category (stacked bar),
+Loan Balance Trend (multi-line), Principal vs Interest (stacked column), Operating Profit
+Trend (bar with zero line), Unit Collection Matrix (HTML table), Electricity Trend (line),
+Water Trend (line).
+
+### Reports: 6 tabs + CSV export
+
+Monthly Statement | Annual Summary | Unit Performance | Loan Report | Expense Report |
+Utility Report. Year picker uses Indian FY (April–March). CSV export via server action +
+Blob download.
+
+### Delete/restore capability matrix
+
+| Entity | Schema `deletedAt` | Soft-delete | Restore | Conflict check on restore |
+|--------|:---:|:---:|:---:|:---:|
+| Expenses | ✅ | ✅ | ✅ | N/A (no unique index) |
+| Loan Repayments | ✅ | ✅ | ✅ | ✅ (loanId + month) |
+| Rent Entries | ✅ | ✅ | ✅ | ✅ (unitId + month) |
+| Utility Records | ✅ | ✅ | ✅ | ✅ (unitId + month + type) |
+| Loan Masters | ✅ | ✅ | ✅ | Repayment guard (delete repayments first) |
+
+### Validation alignment (Zod ↔ DB CHECKs)
+
+| Constraint | Zod (client) | Zod (server) | DB CHECK |
+|------------|:---:|:---:|:---:|
+| `total_payment > 0` | ✅ | ✅ | ✅ |
+| `expense amount > 0` | ✅ | ✅ | ✅ |
+| `parts ≤ total` | — | ✅ (action body) | ✅ |
+| `adjustment needs reason` | — | ✅ (`\|\|` not `??`) | ✅ |
+| `current ≥ previous (meter)` | — | ✅ (`.refine()`) | ✅ |
+
+### Test coverage
+
+102 tests across 6 domain modules. Key scenarios tested:
+- Collection rate uses Σ/Σ not mean (54.5% not 75%)
+- NULL paidAmount ≠ ₹0
+- Zero target → null rate (no divide-by-zero)
+- Rent pending floors per-month
+- Outstanding is a stock (no average)
+- Self-occupied excluded from target
+- Gold loan ₹0 principal is valid
+- Chart series includes all months
+
+---
+
+## What remains to build
+
+### P0 — Must-have before real daily use
+
+| Item | Effort | Schema change? |
+|------|--------|:---:|
+| **Settings page** — edit property, units, rent, categories, policy toggles | M | No |
+| **Month close checklist UI** — surface the 4 `*_reviewed_at` timestamps | S | No |
+| **Rent "Apply Forward"** — propagate occupancy/rent changes to future months | M | No |
+| **History/audit page** — surface the audit_log table | M | No |
+
+### P1 — High value
+
+| Item | Effort | Schema change? |
+|------|--------|:---:|
+| Tenant name + phone on units | S | 2 columns |
+| Cumulative rent arrears per unit | S | No |
+| Net yield / ROI calculator | S | 1 column (`purchasePrice`) |
+| Loan-free date projection | S | No |
+| Backup reminder banner | S | No |
+
+### P2 — Nice-to-have
+
+| Item | Effort | Schema change? |
+|------|--------|:---:|
+| Recurring expenses (auto-generate monthly) | M | 1 column |
+| Tax summary tab (Section 24, ITR) | S | No |
+| Vacancy Loss KPI | S | No |
+| Rent escalation scheduling | M | New table |
+| What-if prepayment calculator | S | No |
+
+### Known technical debt
+
+- `getLoanLedger` and `listCurrentOutstandings` exported from both `loans.ts` and
+  `loan-repayments.ts` — consolidate to `loans.ts`
+- `next-themes` script tag warning in React 19 (cosmetic, does not block rendering)
+- No tests for `buildLoanBalanceSeries` and `buildUtilityTrendSeries` chart builders
+- Progress bar uses `totalPayment` sum in some places instead of `principalPaid` sum
+  (may overstate progress for loans with high interest proportion)
