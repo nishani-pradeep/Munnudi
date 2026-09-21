@@ -44,6 +44,21 @@ export async function createRentVersion(
     .where(and(eq(units.id, input.unitId), eq(units.propertyId, propertyId)));
   if (!unit) throw new Error("Unit not found");
 
+  const [existing] = await db
+    .select({ id: unitRentVersions.id })
+    .from(unitRentVersions)
+    .where(
+      and(
+        eq(unitRentVersions.unitId, input.unitId),
+        eq(unitRentVersions.effectiveMonth, input.effectiveMonth),
+      ),
+    );
+  if (existing) {
+    throw new Error(
+      `A rent version already exists for this unit in ${input.effectiveMonth}. Edit the existing version instead.`,
+    );
+  }
+
   const [row] = await db
     .insert(unitRentVersions)
     .values(input)
