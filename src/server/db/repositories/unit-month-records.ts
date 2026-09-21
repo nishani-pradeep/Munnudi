@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, isNull, lte } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { units, unitMonthRecords } from "@/db/schema";
 import { computeCensusForMonth, type OccupancyStatus } from "@/domain/rent";
@@ -47,13 +47,13 @@ export async function ensureMonthGenerated(propertyId: string, month: MonthKey):
         expectedRentSnapshot: toNumericString(r.expectedRentSnapshot),
       })),
     )
-    .onConflictDoNothing({
-      // Must match the partial unique index's predicate exactly, or Postgres
-      // cannot infer it as the arbiter: "no unique or exclusion constraint
-      // matching the ON CONFLICT specification" (found by running this for
-      // real, not by reading the DSL docs alone).
+    .onConflictDoUpdate({
       target: [unitMonthRecords.unitId, unitMonthRecords.month],
       where: isNull(unitMonthRecords.deletedAt),
+      set: {
+        expectedRentSnapshot: sql`excluded.expected_rent_snapshot`,
+        occupancySnapshot: sql`excluded.occupancy_snapshot`,
+      },
     });
 }
 
