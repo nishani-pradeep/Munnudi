@@ -8,6 +8,11 @@ import { createSafeActionClient } from "next-safe-action";
 export const actionClient = createSafeActionClient({
   handleServerError(error) {
     console.error("[server action]", error);
-    return error instanceof Error ? error.message : "Something went wrong.";
+    if (error instanceof Error) {
+      const cause = (error as { cause?: Error }).cause;
+      if (cause?.message) return cause.message;
+      return error.message;
+    }
+    return "Something went wrong.";
   },
 });
