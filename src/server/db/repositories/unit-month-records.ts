@@ -47,14 +47,26 @@ export async function ensureMonthGenerated(propertyId: string, month: MonthKey):
         expectedRentSnapshot: toNumericString(r.expectedRentSnapshot),
       })),
     )
-    .onConflictDoUpdate({
+    .onConflictDoNothing({
       target: [unitMonthRecords.unitId, unitMonthRecords.month],
       where: isNull(unitMonthRecords.deletedAt),
-      set: {
-        expectedRentSnapshot: sql`excluded.expected_rent_snapshot`,
-        occupancySnapshot: sql`excluded.occupancy_snapshot`,
-      },
     });
+
+  for (const r of rowsToInsert) {
+    await db
+      .update(unitMonthRecords)
+      .set({
+        expectedRentSnapshot: toNumericString(r.expectedRentSnapshot),
+        occupancySnapshot: r.occupancySnapshot,
+      })
+      .where(
+        and(
+          eq(unitMonthRecords.unitId, r.unitId),
+          eq(unitMonthRecords.month, r.month),
+          isNull(unitMonthRecords.deletedAt),
+        ),
+      );
+  }
 }
 
 async function listCensusRows(propertyId: string, month: MonthKey) {
