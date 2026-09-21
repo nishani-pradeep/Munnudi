@@ -163,34 +163,33 @@ export function RentVersionDialog({ trigger, units, existing }: Props) {
               )}
             />
 
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="effectiveMonth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Effective from</FormLabel>
-                    <FormControl>
-                      <MonthPicker value={field.value} onChange={field.onChange} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="expectedRent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Expected rent (Rs)</FormLabel>
-                    <FormControl>
-                      <Input inputMode="decimal" placeholder="e.g. 15000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="effectiveMonth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Effective from</FormLabel>
+                  <FormControl>
+                    <MonthPicker value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="expectedRent"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Expected rent (Rs)</FormLabel>
+                  <FormControl>
+                    <Input inputMode="decimal" placeholder="e.g. 15000" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="submit" disabled={isPending}>
