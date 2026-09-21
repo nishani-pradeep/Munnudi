@@ -1,6 +1,6 @@
-import { inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
-import { unitRentVersions } from "@/db/schema";
+import { unitRentVersions, units } from "@/db/schema";
 import { monthKey } from "@/domain/month";
 import type { RentVersion } from "@/domain/rent";
 import { parsePaise } from "@/domain/money";
@@ -17,4 +17,76 @@ export async function listRentVersionsForUnits(unitIds: readonly string[]): Prom
     effectiveMonth: monthKey(r.effectiveMonth),
     expectedRent: parsePaise(r.expectedRent),
   }));
+}
+
+/** All rent versions for a property, for the settings page. */
+export async function listRentVersionsForProperty(propertyId: string) {
+  return db
+    .select({
+      id: unitRentVersions.id,
+      unitId: unitRentVersions.unitId,
+      effectiveMonth: unitRentVersions.effectiveMonth,
+      expectedRent: unitRentVersions.expectedRent,
+    })
+    .from(unitRentVersions)
+    .innerJoin(units, eq(units.id, unitRentVersions.unitId))
+    .where(eq(units.propertyId, propertyId))
+    .orderBy(unitRentVersions.unitId, desc(unitRentVersions.effectiveMonth));
+}
+
+export async function createRentVersion(
+  propertyId: string,
+  input: { unitId: string; effectiveMonth: string; expectedRent: string },
+) {
+  const [unit] = await db
+    .select({ id: units.id })
+    .from(units)
+    .where(and(eq(units.id, input.unitId), eq(units.propertyId, propertyId)));
+  if (!unit) throw new Error("Unit not found");
+
+  const [row] = await db
+    .insert(unitRentVersions)
+    .values(input)
+    .returning({ id: unitRentVersions.id });
+  return row.id;
+}
+
+export async function updateRentVersion(
+  propertyId: string,
+  versionId: string,
+  input: { effectiveMonth: string; expectedRent: string },
+): Promise<boolean> {
+  const result = await db
+    .update(unitRentVersions)
+    .set(input)
+    .where(
+      and(
+        eq(unitRentVersions.id, versionId),
+        inArray(
+          unitRentVersions.unitId,
+          db.select({ id: units.id }).from(units).where(eq(units.propertyId, propertyId)),
+        ),
+      ),
+    )
+    .returning({ id: unitRentVersions.id });
+  return result.length > 0;
+}
+
+export async function deleteRentVersion(
+  propertyId: string,
+  versionId: string,
+): Promise<boolean> {
+  const result = await db
+    .delete(unitRentVersions)
+    .where(
+      and(
+        eq(unitRentVersions.id, versionId),
+        inArray(
+          unitRentVersions.unitId,
+          db.select({ id: units.id }).from(units).where(eq(units.propertyId, propertyId)),
+        ),
+      ),
+    )
+    .returning({ id: unitRentVersions.id });
+  return result.length > 0;
 }

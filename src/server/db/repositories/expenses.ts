@@ -156,3 +156,47 @@ export async function listForMonthRange(
 }
 
 export type ExpenseRangeRow = Awaited<ReturnType<typeof listForMonthRange>>[number];
+
+export async function listAllCategories(propertyId: string) {
+  return db
+    .select()
+    .from(expenseCategories)
+    .where(eq(expenseCategories.propertyId, propertyId))
+    .orderBy(expenseCategories.name);
+}
+
+export async function createCategory(
+  propertyId: string,
+  input: { name: string; isMaintenance: boolean },
+) {
+  const [row] = await db
+    .insert(expenseCategories)
+    .values({ propertyId, ...input })
+    .returning({ id: expenseCategories.id });
+  return row.id;
+}
+
+export async function updateCategory(
+  propertyId: string,
+  categoryId: string,
+  input: { name: string; isMaintenance: boolean },
+): Promise<boolean> {
+  const result = await db
+    .update(expenseCategories)
+    .set(input)
+    .where(and(eq(expenseCategories.id, categoryId), eq(expenseCategories.propertyId, propertyId)))
+    .returning({ id: expenseCategories.id });
+  return result.length > 0;
+}
+
+export async function deactivateCategory(
+  propertyId: string,
+  categoryId: string,
+): Promise<boolean> {
+  const result = await db
+    .update(expenseCategories)
+    .set({ active: false })
+    .where(and(eq(expenseCategories.id, categoryId), eq(expenseCategories.propertyId, propertyId)))
+    .returning({ id: expenseCategories.id });
+  return result.length > 0;
+}
