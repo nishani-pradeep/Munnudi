@@ -121,6 +121,20 @@ export function RepaymentDialog({ loanId, loanName, month, trigger, prefill, exi
     defaultValues: defaults,
   });
 
+  const watchTotal = form.watch("totalPayment");
+  const watchPrincipal = form.watch("principalPaid");
+  const watchOther = form.watch("otherCharges");
+
+  function autoCalcInterest() {
+    const total = parseFloat(watchTotal) || 0;
+    const principal = parseFloat(watchPrincipal) || 0;
+    const other = parseFloat(watchOther) || 0;
+    const interest = total - principal - other;
+    if (interest >= 0) {
+      form.setValue("interestPaid", interest.toFixed(2).replace(/\.00$/, ""));
+    }
+  }
+
   function onDone() {
     toast.success(existing ? "Repayment updated" : "Repayment recorded");
     setOpen(false);
@@ -184,7 +198,15 @@ export function RepaymentDialog({ loanId, loanName, month, trigger, prefill, exi
                   <FormItem>
                     <FormLabel>Total payment (Rs)</FormLabel>
                     <FormControl>
-                      <Input inputMode="decimal" placeholder="e.g. 22450" {...field} />
+                      <Input
+                        inputMode="decimal"
+                        placeholder="e.g. 22450"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setTimeout(autoCalcInterest, 0);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,7 +222,15 @@ export function RepaymentDialog({ loanId, loanName, month, trigger, prefill, exi
                   <FormItem>
                     <FormLabel>Principal</FormLabel>
                     <FormControl>
-                      <Input inputMode="decimal" placeholder="Optional" {...field} />
+                      <Input
+                        inputMode="decimal"
+                        placeholder="Optional"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setTimeout(autoCalcInterest, 0);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -211,9 +241,14 @@ export function RepaymentDialog({ loanId, loanName, month, trigger, prefill, exi
                 name="interestPaid"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Interest</FormLabel>
+                    <FormLabel>Interest (auto-calculated)</FormLabel>
                     <FormControl>
-                      <Input inputMode="decimal" placeholder="Optional" {...field} />
+                      <Input
+                        inputMode="decimal"
+                        placeholder="Total - Principal - Other"
+                        className="bg-muted/50"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -229,7 +264,15 @@ export function RepaymentDialog({ loanId, loanName, month, trigger, prefill, exi
                   <FormItem>
                     <FormLabel>Other charges</FormLabel>
                     <FormControl>
-                      <Input inputMode="decimal" placeholder="Optional" {...field} />
+                      <Input
+                        inputMode="decimal"
+                        placeholder="Optional"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setTimeout(autoCalcInterest, 0);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

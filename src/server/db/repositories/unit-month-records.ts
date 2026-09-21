@@ -52,21 +52,23 @@ export async function ensureMonthGenerated(propertyId: string, month: MonthKey):
       where: isNull(unitMonthRecords.deletedAt),
     });
 
-  for (const r of rowsToInsert) {
-    await db
-      .update(unitMonthRecords)
-      .set({
-        expectedRentSnapshot: toNumericString(r.expectedRentSnapshot),
-        occupancySnapshot: r.occupancySnapshot,
-      })
-      .where(
-        and(
-          eq(unitMonthRecords.unitId, r.unitId),
-          eq(unitMonthRecords.month, r.month),
-          isNull(unitMonthRecords.deletedAt),
+  await Promise.all(
+    rowsToInsert.map((r) =>
+      db
+        .update(unitMonthRecords)
+        .set({
+          expectedRentSnapshot: toNumericString(r.expectedRentSnapshot),
+          occupancySnapshot: r.occupancySnapshot,
+        })
+        .where(
+          and(
+            eq(unitMonthRecords.unitId, r.unitId),
+            eq(unitMonthRecords.month, r.month),
+            isNull(unitMonthRecords.deletedAt),
+          ),
         ),
-      );
-  }
+    ),
+  );
 }
 
 async function listCensusRows(propertyId: string, month: MonthKey) {

@@ -300,30 +300,39 @@ function ClosedLoansSection({ loans }: { loans: LoanRow[] }) {
 
 type RepaymentPrefill = {
   totalPayment: string;
-  principalPaid: string;
-  interestPaid: string;
+  principalPaid?: string;
+  interestPaid?: string;
 };
 
 async function computePrefill(
   loan: LoanRow,
   month: MonthKey,
 ): Promise<RepaymentPrefill | undefined> {
-  if (!loan.expectsMonthlyPayment || !loan.interestRate || !loan.remainingTenureMonths) {
-    return undefined;
+  if (!loan.expectsMonthlyPayment) return undefined;
+
+  if (loan.interestRate && loan.remainingTenureMonths) {
+    const anchor = await resolveAmortizationAnchor(loan, month);
+    if (anchor.remainingTenureMonths && anchor.remainingTenureMonths > 0) {
+      const step = nextExpectedRepayment(
+        anchor.outstanding,
+        Number(loan.interestRate),
+        anchor.remainingTenureMonths,
+      );
+      if (step) {
+        return {
+          totalPayment: toNumericString(step.emi),
+          principalPaid: toNumericString(step.principal),
+          interestPaid: toNumericString(step.interest),
+        };
+      }
+    }
   }
-  const anchor = await resolveAmortizationAnchor(loan, month);
-  if (!anchor.remainingTenureMonths || anchor.remainingTenureMonths <= 0) return undefined;
-  const step = nextExpectedRepayment(
-    anchor.outstanding,
-    Number(loan.interestRate),
-    anchor.remainingTenureMonths,
-  );
-  if (!step) return undefined;
-  return {
-    totalPayment: toNumericString(step.emi),
-    principalPaid: toNumericString(step.principal),
-    interestPaid: toNumericString(step.interest),
-  };
+
+  if (loan.scheduledEmi) {
+    return { totalPayment: loan.scheduledEmi.replace(/\.00$/, "") };
+  }
+
+  return undefined;
 }
 
 /** Parse numeric string to paise integer (client-safe, no branded type). */
