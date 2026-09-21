@@ -5,7 +5,7 @@ import { ScopeToggle } from "@/components/dashboard/scope-toggle";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { MissingFlags } from "@/components/dashboard/missing-flags";
 import { UnitCollectionMatrix } from "@/components/dashboard/unit-collection-matrix";
-import { RentChart } from "@/components/dashboard/charts/rent-chart";
+import { ForecastChart } from "@/components/dashboard/charts/forecast-chart";
 import { ExpenseCategoryChart } from "@/components/dashboard/charts/expense-category-chart";
 import { LoanBalanceChart } from "@/components/dashboard/charts/loan-balance-chart";
 import { PrincipalInterestChart } from "@/components/dashboard/charts/principal-interest-chart";
@@ -24,12 +24,12 @@ import {
   type MonthKey,
   monthKey,
 } from "@/domain/month";
-import { parsePaise } from "@/domain/money";
+import { parsePaise, paise } from "@/domain/money";
 import { getActiveProperty } from "@/server/db/scope";
 import { ensureMonthGenerated, listForMonthRange as listRentRange } from "@/server/db/repositories/unit-month-records";
 import { listForMonthRange as listExpenseRange } from "@/server/db/repositories/expenses";
 import { listForMonthRange as listRepaymentRange } from "@/server/db/repositories/loan-repayments";
-import { listLoans, listCurrentOutstandings, listLedgerForRange } from "@/server/db/repositories/loans";
+import { listLoans, listCurrentOutstandings, listLedgerForRange, resolveAmortizationAnchor } from "@/server/db/repositories/loans";
 import { listForMonthRange as listUtilityRange } from "@/server/db/repositories/utility-records";
 import { listForMonthRange as listStatusRange } from "@/server/db/repositories/monthly-status";
 
@@ -46,7 +46,8 @@ import {
   computeTotalDebtPayments,
   computeDelta,
   computeMissingDataFlags,
-  buildRentChartSeries,
+  buildForecastSeries,
+  type ForecastLoanInput,
   buildExpenseByCategorySeries,
   buildPrincipalVsInterestSeries,
   buildOperatingProfitSeries,
@@ -201,7 +202,24 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
   const flags = computeMissingDataFlags(rentKpiRows, repaymentKpiRows, loanList, month);
 
   // ----- Chart data -----
-  const rentChartData = buildRentChartSeries(rentKpiRows, chartMonths);
+  // 10-year forecast: loan reduction + rent accumulation
+  const forecastLoans: ForecastLoanInput[] = await Promise.all(
+    activeLoans.map(async (loan) => {
+      const anchor = await resolveAmortizationAnchor(loan, month);
+      return {
+        outstanding: anchor.outstanding,
+        annualRate: loan.interestRate ? Number(loan.interestRate) : null,
+        remainingMonths: anchor.remainingTenureMonths,
+      };
+    }),
+  );
+  const monthlyRentPaise = rentalTarget.kind !== "unknown" ? rentalTarget.paise : paise(0);
+  const forecastSeries = buildForecastSeries(
+    forecastLoans,
+    monthlyRentPaise,
+    0.05,
+    120,
+  );
   const expenseChartData = buildExpenseByCategorySeries(expenseKpiRows, chartMonths);
   const expenseCategories = Array.from(new Set(expenseKpiRows.map((e) => e.categoryName)));
   const principalInterestData = buildPrincipalVsInterestSeries(repaymentKpiRows, chartMonths);
@@ -314,12 +332,12 @@ export default async function Page({ searchParams }: { searchParams: Promise<Sea
 
       {/* Chart grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Rent: Expected vs Collected</CardTitle>
+            <CardTitle>10-Year Forecast</CardTitle>
           </CardHeader>
           <CardContent>
-            <RentChart data={rentChartData} />
+            <ForecastChart data={forecastSeries} />
           </CardContent>
         </Card>
 

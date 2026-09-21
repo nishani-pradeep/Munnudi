@@ -19,6 +19,7 @@ import {
   clampAtZero,
 } from "./money";
 import { type MonthKey, formatMonthShort } from "./month";
+import { generateAmortizationSchedule } from "./loans";
 
 // ---------------------------------------------------------------------------
 // Exported types
@@ -834,4 +835,73 @@ export function computeMissingDataFlags(
   }
 
   return flags;
+}
+
+// ── 20. Long-term forecast ──────────────────────────────────────────
+
+export type ForecastLoanInput = {
+  outstanding: Paise;
+  annualRate: number | null;
+  remainingMonths: number | null;
+};
+
+export type ForecastPoint = {
+  monthIndex: number;
+  label: string;
+  loanBalance: number;
+  cumulativeRent: number;
+};
+
+export function buildForecastSeries(
+  loans: ForecastLoanInput[],
+  monthlyRent: Paise,
+  annualRentEscalation: number,
+  horizonMonths: number,
+): ForecastPoint[] {
+  const loanSchedules: (Paise | null)[][] = loans.map((loan) => {
+    if (loan.annualRate != null && loan.remainingMonths != null && loan.remainingMonths > 0) {
+      const steps = generateAmortizationSchedule(
+        loan.outstanding,
+        loan.annualRate,
+        loan.remainingMonths,
+      );
+      const balances: (Paise | null)[] = steps.map((s) => s.closingBalance);
+      return balances;
+    }
+    return [];
+  });
+
+  const points: ForecastPoint[] = [];
+  let cumulativeRent = 0;
+  let currentMonthlyRent = monthlyRent as number;
+
+  for (let m = 0; m < horizonMonths; m++) {
+    if (m > 0 && m % 12 === 0) {
+      currentMonthlyRent = Math.round(currentMonthlyRent * (1 + annualRentEscalation));
+    }
+    cumulativeRent += currentMonthlyRent;
+
+    let totalLoanBalance = 0;
+    for (let i = 0; i < loans.length; i++) {
+      const schedule = loanSchedules[i];
+      if (m < schedule.length) {
+        totalLoanBalance += schedule[m] as number;
+      } else if (schedule.length > 0) {
+        totalLoanBalance += 0;
+      } else {
+        totalLoanBalance += loans[i].outstanding as number;
+      }
+    }
+
+    const year = Math.floor(m / 12) + 1;
+    const monthInYear = (m % 12) + 1;
+    points.push({
+      monthIndex: m,
+      label: m % 12 === 0 ? `Year ${year}` : `Y${year} M${monthInYear}`,
+      loanBalance: totalLoanBalance / 100,
+      cumulativeRent: cumulativeRent / 100,
+    });
+  }
+
+  return points;
 }
