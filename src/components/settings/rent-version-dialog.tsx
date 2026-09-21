@@ -36,6 +36,7 @@ import {
   createRentVersionAction,
   updateRentVersionAction,
 } from "@/server/actions/settings";
+import { MonthPicker } from "@/components/month-picker";
 
 const MONEY_RE = /^\d+(\.\d{1,2})?$/;
 
@@ -170,7 +171,7 @@ export function RentVersionDialog({ trigger, units, existing }: Props) {
                   <FormItem>
                     <FormLabel>Effective from</FormLabel>
                     <FormControl>
-                      <Input type="month" {...field} />
+                      <MonthPicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

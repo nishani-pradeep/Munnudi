@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { NavLinks } from "./nav-links";
 import { MobileNav } from "./mobile-nav";
-import { MonthSwitcher } from "./month-switcher";
+import { MonthSwitcherGuard } from "./month-switcher-guard";
 import { ThemeToggle } from "./theme-toggle";
 import { resolveCurrentMonth } from "@/lib/app-config";
 
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className="text-base font-semibold tracking-tight md:hidden">Munnudi</span>
           <div className="flex-1" />
           <Suspense fallback={null}>
-            <MonthSwitcher currentMonth={currentMonth} />
+            <MonthSwitcherGuard currentMonth={currentMonth} />
           </Suspense>
           <ThemeToggle />
         </header>
