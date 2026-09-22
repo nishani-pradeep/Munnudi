@@ -15,6 +15,19 @@ import { listRentVersionsForUnits } from "./unit-rent-versions";
  * never touched by re-running this.
  */
 export async function ensureMonthGenerated(propertyId: string, month: MonthKey): Promise<void> {
+  const existing = await db
+    .select({ id: unitMonthRecords.id })
+    .from(unitMonthRecords)
+    .where(
+      and(
+        eq(unitMonthRecords.propertyId, propertyId),
+        eq(unitMonthRecords.month, month),
+        isNull(unitMonthRecords.deletedAt),
+      ),
+    )
+    .limit(1);
+  if (existing.length > 0) return;
+
   const activeUnits = await listActiveUnits(propertyId);
   if (activeUnits.length === 0) return;
 
@@ -51,24 +64,6 @@ export async function ensureMonthGenerated(propertyId: string, month: MonthKey):
       target: [unitMonthRecords.unitId, unitMonthRecords.month],
       where: isNull(unitMonthRecords.deletedAt),
     });
-
-  await Promise.all(
-    rowsToInsert.map((r) =>
-      db
-        .update(unitMonthRecords)
-        .set({
-          expectedRentSnapshot: toNumericString(r.expectedRentSnapshot),
-          occupancySnapshot: r.occupancySnapshot,
-        })
-        .where(
-          and(
-            eq(unitMonthRecords.unitId, r.unitId),
-            eq(unitMonthRecords.month, r.month),
-            isNull(unitMonthRecords.deletedAt),
-          ),
-        ),
-    ),
-  );
 }
 
 async function listCensusRows(propertyId: string, month: MonthKey) {
