@@ -141,30 +141,36 @@ export async function listCurrentOutstandings(
   propertyId: string,
   asOfMonth: MonthKey,
 ): Promise<{ loanId: string; loanName: string; outstanding: Paise }[]> {
-  const activeLoans = await listLoans(propertyId, { includeClosed: false });
-  const results: { loanId: string; loanName: string; outstanding: Paise }[] = [];
-
-  for (const loan of activeLoans) {
-    const [latest] = await db
-      .select({ effectiveOutstanding: loanLedger.effectiveOutstanding })
+  const [activeLoans, ledgerRows] = await Promise.all([
+    listLoans(propertyId, { includeClosed: false }),
+    db
+      .select({
+        loanId: loanLedger.loanId,
+        effectiveOutstanding: loanLedger.effectiveOutstanding,
+        month: loanLedger.month,
+      })
       .from(loanLedger)
       .where(
         and(
-          eq(loanLedger.loanId, loan.id),
+          eq(loanLedger.propertyId, propertyId),
           lte(loanLedger.month, asOfMonth),
         ),
       )
-      .orderBy(desc(loanLedger.month))
-      .limit(1);
+      .orderBy(loanLedger.loanId, desc(loanLedger.month)),
+  ]);
 
-    const outstanding = latest?.effectiveOutstanding
-      ? parsePaise(latest.effectiveOutstanding)
-      : parsePaise(loan.openingOutstanding);
-
-    results.push({ loanId: loan.id, loanName: loan.name, outstanding });
+  const latestByLoan = new Map<string, string>();
+  for (const row of ledgerRows) {
+    if (row.loanId && row.effectiveOutstanding && !latestByLoan.has(row.loanId)) {
+      latestByLoan.set(row.loanId, row.effectiveOutstanding);
+    }
   }
 
-  return results;
+  return activeLoans.map((loan) => ({
+    loanId: loan.id,
+    loanName: loan.name,
+    outstanding: parsePaise(latestByLoan.get(loan.id) ?? loan.openingOutstanding),
+  }));
 }
 
 export async function listLedgerForRange(
